@@ -22,7 +22,7 @@ The next session picks up from `docs/progress.md`, not from chat history.
 | # | Session | Status |
 |---|---|---|
 | 0 | Scaffold and deploy | ✅ |
-| 1 | ◆ Database schema and seed | ☐ |
+| 1 | ◆ Database schema and seed | ✅ |
 | 2 | Auth | ☐ |
 | 3 | ◆ Upload pipeline | ☐ |
 | 4 | Library grid | ☐ |
