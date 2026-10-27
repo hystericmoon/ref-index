@@ -21,6 +21,14 @@ made, open issues. Keep entries short; this file is read at the start of every s
   First thing next session, run:
   `pnpm dlx shadcn@latest add button input dialog dropdown-menu sheet sonner command toggle-group badge skeleton`
   (sonner replaces the deprecated toast). Then swap ThemeToggle to the shadcn Button.
+- Deployed: https://ref-index.vercel.app (Vercel Hobby, functions in sin1 via vercel.json;
+  every push to main deploys). Supabase project ref `kolzsxfgqodulzteocnd` (Singapore).
+  Auth Site URL = production URL; redirect allow list = production/** and localhost:3000/**.
+- **Open:** Vercel env vars not set yet. Add NEXT_PUBLIC_SUPABASE_URL and
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in Vercel → Settings → Environment Variables
+  before Session 2, then redeploy.
+- Commits must use the GitHub-linked email (96169814+hystericmoon@users.noreply.github.com)
+  or Vercel blocks the deploy.
 
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
