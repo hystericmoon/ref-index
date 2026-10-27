@@ -21,7 +21,7 @@ The next session picks up from `docs/progress.md`, not from chat history.
 ## Status
 | # | Session | Status |
 |---|---|---|
-| 0 | Scaffold and deploy | ✅ (shadcn components pending, see progress) |
+| 0 | Scaffold and deploy | ✅ |
 | 1 | ◆ Database schema and seed | ☐ |
 | 2 | Auth | ☐ |
 | 3 | ◆ Upload pipeline | ☐ |
