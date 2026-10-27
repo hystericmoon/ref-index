@@ -17,10 +17,10 @@ made, open issues. Keep entries short; this file is read at the start of every s
   green palette, `cn` util); next-themes light/dark/system with a toggle.
 - Supabase helpers in src/lib/supabase (browser + server, publishable key). Supabase CLI is a
   dev dependency; hosted project only. Session-refresh proxy deferred to Session 2.
-- **Open:** shadcn components not added yet (registry unreachable from the build sandbox).
-  First thing next session, run:
-  `pnpm dlx shadcn@latest add button input dialog dropdown-menu sheet sonner command toggle-group badge skeleton`
-  (sonner replaces the deprecated toast). Then swap ThemeToggle to the shadcn Button.
+- shadcn components added from shadcn's GitHub source (new-york-v4): button, input, dialog,
+  dropdown-menu, sheet, sonner, command, toggle-group, toggle, badge, skeleton. Deps: radix-ui,
+  cmdk, sonner. ThemeToggle now uses Button (44px target). Add more later with
+  `pnpm dlx shadcn@latest add <name>` on a machine with normal network access.
 - Deployed: https://ref-index.vercel.app (Vercel Hobby, functions in sin1 via vercel.json;
   every push to main deploys). Supabase project ref `kolzsxfgqodulzteocnd` (Singapore).
   Auth Site URL = production URL; redirect allow list = production/** and localhost:3000/**.
