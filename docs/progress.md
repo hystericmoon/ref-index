@@ -30,5 +30,28 @@ made, open issues. Keep entries short; this file is read at the start of every s
 - Commits must use the GitHub-linked email (96169814+hystericmoon@users.noreply.github.com)
   or Vercel blocks the deploy.
 
+### Session 1 · Database schema and seed (2026-10-28)
+- 5 migrations pushed to the hosted project: tables + FKs + indexes (pg_trgm on tag labels and
+  app names), `screens.search_vector` kept current by triggers (app name A, tag labels B,
+  synonyms C, notes D; config `english`), RLS, taxonomy seed (5 facets, 49 tags with synonyms),
+  21 sources from docs/sources.json. Advisors: no issues.
+- Decisions: `apps` has an `owner_id` (apps are private like screens). Reference data is seeded
+  in migrations, not seed.sql. Facets/tags/sources are read-only via the API. Trigger functions
+  live in a `private` schema the Data API doesn't expose.
+- RLS test `supabase/tests/rls_screens.sql` (one transaction, rolled back) passes: B can't read,
+  edit, delete or tag A's rows; anon can't query screens. Run with
+  `.\node_modules\.bin\supabase db query --linked -f supabase/tests/rls_screens.sql`.
+- Types in src/lib/db/types.ts (`supabase gen types typescript --linked --schema public`), typed
+  helpers per table in src/lib/db, Supabase clients typed with `Database`.
+- `listScreens({ tagIds })` matches any tag (two queries); Session 6 should replace it with an RPC
+  for all-tags filtering plus search.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
+- `pnpm <script>` currently fails a lockfile check (minimumReleaseAge rejects lucide-react 1.62.0
+  and electron-to-chromium 1.5.465). Should clear once they age past the cutoff; until then call
+  bins directly (`.\node_modules\.bin\supabase`, `tsc`, `eslint`, `next build`).
+- pnpm ignores the `pnpm.onlyBuiltDependencies` field in package.json; move it to
+  pnpm-workspace.yaml (`onlyBuiltDependencies`).
+- The Supabase project is in ap-northeast-1 (Tokyo), not Singapore as noted in Session 0, while
+  Vercel functions run in sin1. Either move the functions region to hnd1 or accept the latency.
