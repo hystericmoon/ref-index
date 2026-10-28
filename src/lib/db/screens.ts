@@ -8,10 +8,15 @@ export type ListScreensOptions = {
   tagIds?: string[];
   /** Full-text search over app name, tag labels and synonyms, and notes. */
   query?: string;
-  /** Cursor: only screens captured before this ISO timestamp. */
+  /** Cursor from `screenCursor`: only screens after this one in newest-first order. */
   before?: string;
   limit?: number;
 };
+
+/** Cursor for the screen after which the next page starts. */
+export function screenCursor(screen: Pick<Screen, "captured_at" | "id">): string {
+  return `${screen.captured_at}|${screen.id}`;
+}
 
 /** The signed-in user's screens, newest first, with their app. */
 export async function listScreens(db: DbClient, options: ListScreensOptions = {}) {
@@ -23,8 +28,14 @@ export async function listScreens(db: DbClient, options: ListScreensOptions = {}
   }
   if (appId) q = q.eq("app_id", appId);
   if (query?.trim()) q = q.textSearch("search_vector", query, { config: "english", type: "websearch" });
-  if (before) q = q.lt("captured_at", before);
-  return must(await q.order("captured_at", { ascending: false }).limit(limit));
+  if (before) {
+    // Screens can share a captured_at, so the id breaks ties.
+    const [at, id] = before.split("|");
+    q = id ? q.or(`captured_at.lt."${at}",and(captured_at.eq."${at}",id.lt.${id})`) : q.lt("captured_at", at);
+  }
+  return must(
+    await q.order("captured_at", { ascending: false }).order("id", { ascending: false }).limit(limit),
+  );
 }
 
 export async function searchScreens(db: DbClient, query: string, limit = 50) {

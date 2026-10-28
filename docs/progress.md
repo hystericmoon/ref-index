@@ -78,6 +78,17 @@ made, open issues. Keep entries short; this file is read at the start of every s
   fake image rejected), signed-out redirect, one real upload on production (row, original, thumbnail).
   Not yet checked: 10 images in one go. /library shows an Upload button and a note until Session 4.
 
+### Session 4 · Library grid (2026-10-28)
+- /library: masonry of thumbnails (signed URLs from the private bucket, 1 h), boxes sized from the
+  stored width/height, lazy images, infinite scroll (40 per page, server action, sentinel 1200px
+  ahead), skeletons (route loading.tsx and while fetching), empty state with Upload. Cards link to
+  /library/screens/[id] (viewer is Session 7) and show the app name on hover/focus.
+- Decisions: shortest-column placement computed for 2, 3 and 4 columns, with CSS picking one by
+  breakpoint, so appending a page never moves cards and there's no JS measuring. Cursor is
+  captured_at|id, so screens with the same timestamp aren't skipped (checked against PostgREST).
+- Checked: build, lint, typecheck, cursor filter. Not yet checked: 200 seeded screens scrolling, and
+  how the grid looks with real screens (needs a signed-in browser).
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing

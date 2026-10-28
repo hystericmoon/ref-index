@@ -2,19 +2,20 @@ import { ImagePlus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { listScreens } from "@/lib/db/screens";
-import { createClient } from "@/lib/supabase/server";
+import { loadScreenPage } from "./data";
+import { ScreenGrid } from "./screen-grid";
 
 export const metadata: Metadata = { title: "Library" };
 
 export default async function LibraryPage() {
-  const screens = await listScreens(await createClient(), { limit: 1 });
+  const page = await loadScreenPage();
+  const empty = page.screens.length === 0;
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 pb-24 sm:px-6">
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 pb-24 sm:px-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="font-display text-3xl font-bold tracking-tight">Library</h1>
-        {screens.length > 0 && (
+        {!empty && (
           <Button asChild className="h-11 px-5">
             <Link href="/library/upload">
               <ImagePlus aria-hidden="true" />
@@ -24,11 +25,7 @@ export default async function LibraryPage() {
         )}
       </div>
 
-      {screens.length > 0 && (
-        <p className="text-muted-foreground">Your screens are saved. The grid to browse them is coming next.</p>
-      )}
-
-      {screens.length === 0 && (
+      {empty ? (
         <section
           aria-labelledby="empty-title"
           className="flex flex-col items-center gap-4 rounded-xl border border-dashed px-6 py-16 text-center"
@@ -47,6 +44,8 @@ export default async function LibraryPage() {
             <Link href="/library/upload">Upload screens</Link>
           </Button>
         </section>
+      ) : (
+        <ScreenGrid initial={page} />
       )}
     </main>
   );

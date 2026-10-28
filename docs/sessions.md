@@ -24,8 +24,8 @@ The next session picks up from `docs/progress.md`, not from chat history.
 | 0 | Scaffold and deploy | ✅ |
 | 1 | ◆ Database schema and seed | ✅ |
 | 2 | Auth | ✅ |
-| 3 | ◆ Upload pipeline | ◐ built; real upload not yet tested |
-| 4 | Library grid | ☐ |
+| 3 | ◆ Upload pipeline | ✅ (10-at-once not tested) |
+| 4 | Library grid | ◐ built; not checked with 200 screens |
 | 5 | Tagging UI | ☐ |
 | 6 | ◆ Search and filters | ☐ |
 | 7 | Screen viewer and flows | ☐ |
