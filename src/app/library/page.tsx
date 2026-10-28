@@ -12,7 +12,21 @@ export default async function LibraryPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 pb-24 sm:px-6">
-      <h1 className="font-display text-3xl font-bold tracking-tight">Library</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="font-display text-3xl font-bold tracking-tight">Library</h1>
+        {screens.length > 0 && (
+          <Button asChild className="h-11 px-5">
+            <Link href="/library/upload">
+              <ImagePlus aria-hidden="true" />
+              Upload
+            </Link>
+          </Button>
+        )}
+      </div>
+
+      {screens.length > 0 && (
+        <p className="text-muted-foreground">Your screens are saved. The grid to browse them is coming next.</p>
+      )}
 
       {screens.length === 0 && (
         <section

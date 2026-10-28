@@ -75,7 +75,8 @@ made, open issues. Keep entries short; this file is read at the start of every s
   gets size with sharp (EXIF-rotated), writes `<id>.thumb.webp` (480px wide) and inserts the row
   with the browser-made id, so retries are idempotent. Native selects instead of shadcn Select.
 - Checked: build, RLS test, sharp processing in a script (PNG/JPG/WebP, rotation, no enlarging,
-  fake image rejected), signed-out redirect. Not yet checked: a real 10-image upload while signed in.
+  fake image rejected), signed-out redirect, one real upload on production (row, original, thumbnail).
+  Not yet checked: 10 images in one go. /library shows an Upload button and a note until Session 4.
 
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
