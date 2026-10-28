@@ -7,7 +7,7 @@ task needs product decisions). Session plan and status: `docs/sessions.md`.
 ## Stack
 - Next.js (App Router) + TypeScript, strict mode
 - Tailwind CSS + shadcn/ui (components live in `src/components/ui`, edit freely)
-- Supabase (hosted, Singapore; no local DB): Postgres, Auth, Storage (bucket `screens`),
+- Supabase (hosted, Tokyo ap-northeast-1; no local DB): Postgres, Auth, Storage (bucket `screens`),
   row-level security on every table. Keys: publishable key in the browser, secret key
   only in server code and `.env.local`, never committed
 - sharp for thumbnails, generated on upload (WebP, 480px wide) next to the original

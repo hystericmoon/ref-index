@@ -1,0 +1,12 @@
+# Packages allowed to run install scripts.
+# allowBuilds is read by pnpm 11+ (local); onlyBuiltDependencies by pnpm 9/10 (Vercel, lockfile v9).
+allowBuilds:
+  "@tailwindcss/oxide": true
+  sharp: true
+  supabase: true
+  unrs-resolver: true
+onlyBuiltDependencies:
+  - "@tailwindcss/oxide"
+  - sharp
+  - supabase
+  - unrs-resolver

@@ -45,13 +45,12 @@ made, open issues. Keep entries short; this file is read at the start of every s
   helpers per table in src/lib/db, Supabase clients typed with `Database`.
 - `listScreens({ tagIds })` matches any tag (two queries); Session 6 should replace it with an RPC
   for all-tags filtering plus search.
+- Follow-ups: the Supabase project is in Tokyo (ap-northeast-1), not Singapore as Session 0 noted,
+  so Vercel functions moved from sin1 to hnd1. The build allowlist moved from package.json's
+  `pnpm` field (ignored by pnpm 11+) to pnpm-workspace.yaml (`allowBuilds`, plus
+  `onlyBuiltDependencies` for Vercel's pnpm 10). `pnpm <script>` fails pnpm's release-age check on
+  lucide-react 1.62.0 until about 2026-10-28 06:10 UTC; until then run bins from node_modules/.bin.
 
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
-- `pnpm <script>` currently fails a lockfile check (minimumReleaseAge rejects lucide-react 1.62.0
-  and electron-to-chromium 1.5.465). Should clear once they age past the cutoff; until then call
-  bins directly (`.\node_modules\.bin\supabase`, `tsc`, `eslint`, `next build`).
-- pnpm ignores the `pnpm.onlyBuiltDependencies` field in package.json; move it to
-  pnpm-workspace.yaml (`onlyBuiltDependencies`).
-- The Supabase project is in ap-northeast-1 (Tokyo), not Singapore as noted in Session 0, while
-  Vercel functions run in sin1. Either move the functions region to hnd1 or accept the latency.
+
