@@ -59,8 +59,8 @@ made, open issues. Keep entries short; this file is read at the start of every s
   Sign in link. /library shows an empty state with an Upload CTA (/library/upload is Session 3).
   Fixed a Session 0 hydration mismatch: the theme toggle's label no longer depends on the theme.
 - Checked locally: redirects, email validation, bad-link error, open-redirect guard, Google hand-off.
-  Checked on production: Google sign-in creates the account and signs in. Not yet checked: a real
-  magic-link sign-in and sign-out.
+  Checked on production: Google sign-in → /library, and sign-out. Not yet checked: a real
+  magic-link sign-in (same callback as Google).
 - Google OAuth client (Google Cloud) is in Testing mode: only listed test users can sign in with
   Google. Publishing needs a home page, /privacy and /terms (not built). Supabase's built-in email
   sender is rate-limited; add custom SMTP before inviting collaborators.
