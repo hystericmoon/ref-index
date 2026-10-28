@@ -4,6 +4,7 @@ import { Check, SquareCheck } from "lucide-react";
 import Link from "next/link";
 import { TagChips, TagPicker, useTagCatalog, type TagState } from "@/components/tag-picker";
 import type { LibraryFilters } from "@/lib/library-filters";
+import { setScreenSequence } from "@/lib/screen-sequence";
 import type { FacetOption, TagOption } from "@/lib/tags";
 import { changeScreenTagsAction } from "./tag-actions";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -75,7 +76,7 @@ function ScreenCard({ screen, selection }: { screen: GridScreen; selection: Sele
 
   if (!selection) {
     return (
-      <Link href={`/library/screens/${screen.id}`} className={className} style={style}>
+      <Link href={`/library/screens/${screen.id}`} className={className} style={style} data-screen-id={screen.id} scroll={false}>
         {content}
       </Link>
     );
@@ -224,6 +225,8 @@ export function ScreenGrid({
       setLoading(false);
     }
   }, [cursor, filters]);
+
+  useEffect(() => setScreenSequence(screens.map((s) => s.id)), [screens]);
 
   useEffect(() => {
     const node = sentinel.current;

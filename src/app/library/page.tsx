@@ -1,4 +1,4 @@
-import { ImagePlus, SearchX } from "lucide-react";
+import { ImagePlus, SearchX, Workflow } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -31,12 +31,20 @@ export default async function LibraryPage({
       <div className="flex items-center justify-between gap-4">
         <h1 className="font-display text-3xl font-bold tracking-tight">Library</h1>
         {!libraryEmpty && (
-          <Button asChild className="h-11 px-5">
-            <Link href="/library/upload">
-              <ImagePlus aria-hidden="true" />
-              Upload
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" className="h-11 px-4">
+              <Link href="/library/flows">
+                <Workflow aria-hidden="true" />
+                Flows
+              </Link>
+            </Button>
+            <Button asChild className="h-11 px-5">
+              <Link href="/library/upload">
+                <ImagePlus aria-hidden="true" />
+                Upload
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 

@@ -28,7 +28,7 @@ The next session picks up from `docs/progress.md`, not from chat history.
 | 4 | Library grid | ◐ built; not checked with 200 screens |
 | 5 | Tagging UI | ◐ built; not checked in a signed-in browser |
 | 6 | ◆ Search and filters | ✅ (not checked in a signed-in browser) |
-| 7 | Screen viewer and flows | ☐ |
+| 7 | Screen viewer and flows | ✅ (not checked in a signed-in browser) |
 | 8 | Directory and site thumbnails | ☐ |
 | 9 | Accessibility, performance, launch | ☐ |
 

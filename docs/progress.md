@@ -112,6 +112,18 @@ made, open issues. Keep entries short; this file is read at the start of every s
   matches an independent query, OR within a facet, cursor with ties, typos; slowest query 17.7 ms.
   RLS test still passes. Not yet checked in a signed-in browser. Counts refresh only on reload after tagging.
 
+### Session 7 · Screen viewer and flows (2026-10-28)
+- /library/screens/[id]: an intercepting-route modal (`@modal/(.)screens/[id]`) over the grid, a full page on
+  direct visits. It has the original image (signed URL), app and platform, editable tags (TagPicker,
+  optimistic), notes saved on blur, flows with add and remove. ←/→ walk the grid's current result set
+  (an in-memory sequence the grid publishes), or library order on a direct visit; Esc closes; focus
+  goes back to the card (`data-screen-id`). The dialog is titled and described for screen readers;
+  alt text is app name plus screen types.
+- /library/flows lists flows. /library/flows/[id] is a horizontal strip with drag to reorder, plus
+  Move earlier and Move later buttons for the keyboard, remove, and add from the app's screens.
+  Saves are optimistic (`setFlowScreens`). Opening a step walks the flow's order.
+- Checked: build, lint, typecheck. Not yet checked in a signed-in browser (modal behaviour, focus return).
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing

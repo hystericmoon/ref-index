@@ -21,6 +21,34 @@ export async function getFlow(db: DbClient, id: string) {
   );
 }
 
+/** One flow with its app, or null. */
+export async function getFlowSummary(db: DbClient, id: string) {
+  const { data, error } = await db.from("flows").select("*, app:apps(id, name, platform)").eq("id", id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/** All the user's flows with their app and how many screens they hold, A–Z. */
+export async function listFlowsWithCounts(db: DbClient) {
+  const { data, error } = await db
+    .from("flows")
+    .select("id, name, app:apps(id, name, platform), flow_screens(count)")
+    .order("name");
+  if (error) throw error;
+  return data.map((flow) => ({ ...flow, screenCount: flow.flow_screens[0]?.count ?? 0 }));
+}
+
+/** One flow's steps in order, with the screen fields a strip needs. */
+export async function listFlowSteps(db: DbClient, flowId: string) {
+  const { data, error } = await db
+    .from("flow_screens")
+    .select("position, screen:screens(id, thumb_path, width, height)")
+    .eq("flow_id", flowId)
+    .order("position");
+  if (error) throw error;
+  return data.flatMap((row) => (row.screen ? [{ position: row.position, ...row.screen }] : []));
+}
+
 /** Flows that include a given screen. */
 export async function listFlowsForScreen(db: DbClient, screenId: string) {
   return must(

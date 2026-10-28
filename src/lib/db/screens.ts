@@ -63,15 +63,43 @@ export async function searchLibrary(db: DbClient, options: LibraryQuery = {}) {
   );
 }
 
+/** The screens just newer (prev) and just older (next) than this one, across the whole library. */
+export async function getScreenNeighbors(db: DbClient, screen: Pick<Screen, "captured_at" | "id">) {
+  const at = `"${screen.captured_at}"`;
+  const [prev, next] = await Promise.all([
+    db
+      .from("screens")
+      .select("id")
+      .or(`captured_at.gt.${at},and(captured_at.eq.${at},id.gt.${screen.id})`)
+      .order("captured_at", { ascending: true })
+      .order("id", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    db
+      .from("screens")
+      .select("id")
+      .or(`captured_at.lt.${at},and(captured_at.eq.${at},id.lt.${screen.id})`)
+      .order("captured_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  return { prev: must(prev)?.id ?? null, next: must(next)?.id ?? null };
+}
+
 export async function searchScreens(db: DbClient, query: string, limit = 50) {
   return listScreens(db, { query, limit });
 }
 
-/** One screen with its app and tags, or null when missing or not the user's. */
+/** One screen with its app and tag ids, or null when missing or not the user's. */
 export async function getScreen(db: DbClient, id: string) {
-  return must(
-    await db.from("screens").select("*, app:apps(*), screen_tags(tag:tags(*))").eq("id", id).maybeSingle(),
-  );
+  const { data, error } = await db
+    .from("screens")
+    .select("*, app:apps(id, name, platform), screen_tags(tag_id)")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
 }
 
 type ScreenInput = Omit<Insert<"screens">, "owner_id" | "search_vector">;
