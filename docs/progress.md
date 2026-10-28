@@ -124,6 +124,23 @@ made, open issues. Keep entries short; this file is read at the start of every s
   Saves are optimistic (`setFlowScreens`). Opening a step walks the flow's order.
 - Checked: build, lint, typecheck. Not yet checked in a signed-in browser (modal behaviour, focus return).
 
+### Session 8 · Directory and site thumbnails (2026-10-28)
+- `/` rebuilt from the database, matching the prototype: Showcase tab (search, medium, gallery filter
+  with counts, featured-on credits, galleries interleaved, Show more) and a "Search the galleries" tab
+  (one search box, suggestions, medium, "Only sites that take a search term", deep links from
+  url_template with {q} encoded and {slug} hyphenated, query sites ranked first, "Unconfirmed link").
+  View and term are kept in the URL (?view=galleries&q=…). Tabs follow the WAI-ARIA pattern.
+- Showcase: migrations 0900/1000 add `showcase_items` and `showcase_features` (public read) and seed 414
+  items and 421 credits from docs/showcase.json via `scripts/showcase-sql.mjs`.
+- `scripts/capture-sources.ts` (Playwright, 1440×900, saved as 960px WebP) writes to `public/sources/`,
+  not Storage, because writing to Storage would need the secret key. It prints SQL; migration 1100
+  records 18 thumbnails. Codrops and Land-book served bot checks and Behance rendered blank, so they
+  have no thumbnail; the script now skips such pages.
+- `scripts/refresh-showcase.ts` prints add-only SQL for review. Dry run: Godly, CSS Design Awards and
+  Awwwards readable; Land-book (403), SiteInspire (429) and sometimes Httpster block it. Not applied yet.
+- Checked in the browser: both tabs, the deep links for "onboarding" (8 search / 6 tag / 7 browse),
+  thumbnails, no console errors. Build, lint and typecheck pass.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing

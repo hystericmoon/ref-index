@@ -227,6 +227,65 @@ export type Database = {
           },
         ]
       }
+      showcase_features: {
+        Row: {
+          first_seen: string
+          gallery: string
+          item_id: string
+          source_url: string
+        }
+        Insert: {
+          first_seen?: string
+          gallery: string
+          item_id: string
+          source_url: string
+        }
+        Update: {
+          first_seen?: string
+          gallery?: string
+          item_id?: string
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "showcase_features_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "showcase_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      showcase_items: {
+        Row: {
+          created_at: string
+          first_seen: string
+          id: string
+          name: string
+          platform: string
+          tags: string[]
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          first_seen?: string
+          id?: string
+          name: string
+          platform: string
+          tags?: string[]
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          first_seen?: string
+          id?: string
+          name?: string
+          platform?: string
+          tags?: string[]
+          url?: string | null
+        }
+        Relationships: []
+      }
       sources: {
         Row: {
           active: boolean
