@@ -185,3 +185,13 @@ _(ideas and out-of-scope items noted during sessions)_
 - The refresh schedule is now daily at 03:00 UTC (`0 3 * * *`, job `showcase-refresh-daily`) and the
   showcase copy says "refreshed daily". The function's one-run-per-12-hours limit still applies.
 - Still needs turning on in the dashboard (Integrations → Cron → Edge Function `showcase-refresh`).
+
+### Showcase screenshots (2026-10-29)
+- Each showcase item with a live address gets a 640×400 WebP of the site's first screen (1280×800
+  in Chromium), stored in the public `showcase` bucket (`thumb_path`, `thumb_checked_at`). Cards show
+  it; items without one show their name as a tile. Items with a screenshot are listed first.
+- `scripts/capture-showcase.sh` captures in batches of 400 and publishes each batch; resumable.
+  Bot checks, error pages, blank screens and parked or lapsed domains are skipped, not worked around.
+  First batch: 222 of 400 captured (old Awwwards entries; many domains have lapsed).
+- Later: the daily refresh can't capture (no browser in Edge Functions), so new items need a rerun
+  of the script; cookie banners that aren't in the hide list still show in some screenshots.

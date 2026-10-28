@@ -6,8 +6,12 @@ export type ShowcaseEntry = {
   url: string | null;
   platform: string;
   tags: string[];
+  /** Public URL of a 640×400 WebP of the site's first screen, when one was captured. */
+  thumbUrl: string | null;
   featured: { gallery: string; sourceUrl: string }[];
 };
+
+const THUMBS = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/showcase`;
 
 export type ShowcaseQuery = { q?: string; medium?: string; gallery?: string; offset?: number; limit?: number };
 
@@ -29,6 +33,7 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
         url: row.url,
         platform: row.platform,
         tags: row.tags,
+        thumbUrl: row.thumb_path ? `${THUMBS}/${row.thumb_path}` : null,
         featured: row.featured as ShowcaseEntry["featured"],
       }),
     ),

@@ -197,7 +197,32 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
           {list.map((e) => {
             const href = e.url ?? e.featured[0]?.sourceUrl;
             return (
-              <li key={e.id} className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-4">
+              <li key={e.id} className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-xl border bg-card p-4">
+                {/* The name link below is the accessible link; the picture repeats it for pointer users. */}
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  className="-mx-4 -mt-4 mb-1 block aspect-[16/10] overflow-hidden border-b bg-muted"
+                >
+                  {e.thumbUrl ? (
+                    <Image
+                      src={e.thumbUrl}
+                      alt=""
+                      width={640}
+                      height={400}
+                      unoptimized
+                      loading="lazy"
+                      className="size-full object-cover object-top transition-transform duration-300 hover:scale-[1.02] motion-reduce:transition-none"
+                    />
+                  ) : (
+                    <span className="flex size-full items-center justify-center p-6 text-center font-display text-xl font-semibold text-balance break-words text-muted-foreground/70">
+                      {e.name}
+                    </span>
+                  )}
+                </a>
                 <div className="flex items-baseline justify-between gap-3">
                   <a href={href} target="_blank" rel="noopener" className="font-semibold break-words hover:underline focus-visible:underline">
                     {e.name}

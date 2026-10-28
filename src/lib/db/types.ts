@@ -264,6 +264,8 @@ export type Database = {
           name: string
           platform: string
           tags: string[]
+          thumb_checked_at: string | null
+          thumb_path: string | null
           url: string | null
         }
         Insert: {
@@ -273,6 +275,8 @@ export type Database = {
           name: string
           platform: string
           tags?: string[]
+          thumb_checked_at?: string | null
+          thumb_path?: string | null
           url?: string | null
         }
         Update: {
@@ -282,6 +286,8 @@ export type Database = {
           name?: string
           platform?: string
           tags?: string[]
+          thumb_checked_at?: string | null
+          thumb_path?: string | null
           url?: string | null
         }
         Relationships: []
@@ -438,6 +444,7 @@ export type Database = {
           name: string
           platform: string
           tags: string[]
+          thumb_path: string
           total: number
           url: string
         }[]
