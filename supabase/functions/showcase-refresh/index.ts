@@ -1,4 +1,4 @@
-// Weekly showcase refresh, called by pg_cron (see migration 20261029000100). Reads each
+// Daily showcase refresh, called by pg_cron (see migration 20261029000100). Reads each
 // gallery's newest picks and adds new names and gallery links; never deletes or edits.
 // Deployed without JWT verification so cron needs no stored key; a run log limits it to
 // one run per 12 hours, so calling it can't be used to hammer the galleries.

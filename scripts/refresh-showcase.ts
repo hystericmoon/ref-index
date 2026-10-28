@@ -1,4 +1,4 @@
-// Local run of the weekly showcase refresh: reads each gallery's newest picks (same code
+// Local run of the daily showcase refresh: reads each gallery's newest picks (same code
 // as the showcase-refresh Edge Function) and prints SQL that adds them. Nothing is deleted.
 //
 // Run:  node scripts/refresh-showcase.ts > tmp/showcase-refresh.sql

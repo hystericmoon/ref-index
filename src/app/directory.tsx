@@ -247,7 +247,7 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
         </button>
       )}
       <p className="max-w-[72ch] border-t pt-4 text-sm text-muted-foreground">
-        Collected from 13 design galleries&apos; listings, refreshed weekly. Sites featured by more than one gallery
+        Collected from 13 design galleries&apos; listings, refreshed daily. Sites featured by more than one gallery
         are merged, and sponsored placements are left out. When a gallery doesn&apos;t show the live address, the
         entry opens the gallery page instead.
       </p>

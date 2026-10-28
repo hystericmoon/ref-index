@@ -180,3 +180,8 @@ _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing
   failed for good.
 
+
+### Showcase refresh: daily instead of weekly (2026-10-29)
+- The refresh schedule is now daily at 03:00 UTC (`0 3 * * *`, job `showcase-refresh-daily`) and the
+  showcase copy says "refreshed daily". The function's one-run-per-12-hours limit still applies.
+- Still needs turning on in the dashboard (Integrations → Cron → Edge Function `showcase-refresh`).
