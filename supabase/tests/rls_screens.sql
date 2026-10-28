@@ -21,6 +21,8 @@ insert into public.flow_screens (flow_id, screen_id, position)
   values ('aaaaaaaa-0000-4000-8000-0000000000f1', 'aaaaaaaa-0000-4000-8000-0000000000c1', 0);
 insert into public.screen_tags (screen_id, tag_id)
   select 'aaaaaaaa-0000-4000-8000-0000000000c1', t.id from public.tags t where t.slug = 'log-in';
+insert into storage.objects (bucket_id, name)
+  values ('screens', 'aaaaaaaa-0000-4000-8000-000000000001/aaaaaaaa-0000-4000-8000-0000000000c1.png');
 
 do $$
 declare v tsvector;
@@ -76,6 +78,15 @@ begin
     raise exception 'FAIL: B created a screen owned by A';
   exception when insufficient_privilege then null;
   end;
+
+  if exists (select 1 from storage.objects where bucket_id = 'screens') then raise exception 'FAIL: B can list A''s screen files'; end if;
+
+  begin
+    insert into storage.objects (bucket_id, name)
+      values ('screens', 'aaaaaaaa-0000-4000-8000-000000000001/planted.png');
+    raise exception 'FAIL: B uploaded into A''s folder';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 -- Anonymous visitor -----------------------------------------------------------------
@@ -92,6 +103,7 @@ begin
     raise exception 'FAIL: anon can query screens';
   exception when insufficient_privilege then null;
   end;
+  if exists (select 1 from storage.objects where bucket_id = 'screens') then raise exception 'FAIL: anon can list screen files'; end if;
 end $$;
 
 reset role;

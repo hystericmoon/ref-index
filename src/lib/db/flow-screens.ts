@@ -25,6 +25,20 @@ export async function setFlowScreens(db: DbClient, flowId: string, screenIds: st
   );
 }
 
+/** Add screens to the end of a flow, in the given order. Screens already in it are skipped. */
+export async function appendFlowScreens(db: DbClient, flowId: string, screenIds: string[]): Promise<void> {
+  const existing = await listFlowScreens(db, flowId);
+  const present = new Set(existing.map((row) => row.screen_id));
+  const start = existing.length ? existing[existing.length - 1].position + 1 : 0;
+  const added = [...new Set(screenIds)].filter((id) => !present.has(id));
+  if (!added.length) return;
+  must(
+    await db
+      .from("flow_screens")
+      .insert(added.map((screen_id, i) => ({ flow_id: flowId, screen_id, position: start + i }))),
+  );
+}
+
 export async function removeScreenFromFlow(db: DbClient, flowId: string, screenId: string): Promise<void> {
   must(await db.from("flow_screens").delete().eq("flow_id", flowId).eq("screen_id", screenId));
 }

@@ -65,6 +65,20 @@ made, open issues. Keep entries short; this file is read at the start of every s
   Google. Publishing needs a home page, /privacy and /terms (not built). Supabase's built-in email
   sender is rate-limited; add custom SMTP before inviting collaborators.
 
+### Session 3 · Upload pipeline (2026-10-28)
+- Private `screens` bucket (10 MB, PNG/JPG/WebP) with owner-only policies on `<uid>/…` folders;
+  the RLS test also checks B can't list or upload into A's folder.
+- /library/upload: pick or create an app (name + platform), optional flow (existing or new), drag
+  and drop or pick files, per-file progress, Retry resumes at the failed step, Remove.
+- Decisions: the browser uploads originals straight to Storage by XHR (progress events; Vercel caps
+  request bodies at 4.5 MB). The `processScreen` server action then reads the original back,
+  gets size with sharp (EXIF-rotated), writes `<id>.thumb.webp` (480px wide) and inserts the row
+  with the browser-made id, so retries are idempotent. Native selects instead of shadcn Select.
+- Checked: build, RLS test, sharp processing in a script (PNG/JPG/WebP, rotation, no enlarging,
+  fake image rejected), signed-out redirect. Not yet checked: a real 10-image upload while signed in.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
+- Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing
+  failed for good.
 
