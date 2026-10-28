@@ -318,7 +318,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      screen_tag_counts: {
+        Args: never
+        Returns: {
+          screens: number
+          tag_id: string
+        }[]
+      }
+      search_screens: {
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_limit?: number
+          p_query?: string
+          p_tag_ids?: string[]
+        }
+        Returns: {
+          app_id: string
+          app_name: string
+          app_platform: string
+          captured_at: string
+          height: number
+          id: string
+          image_path: string
+          tag_ids: string[]
+          thumb_path: string
+          width: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

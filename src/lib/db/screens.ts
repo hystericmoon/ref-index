@@ -38,6 +38,31 @@ export async function listScreens(db: DbClient, options: ListScreensOptions = {}
   );
 }
 
+export type LibraryQuery = {
+  /** ANDed across facets, ORed within a facet; platform tags also match the app's platform. */
+  tagIds?: string[];
+  /** Full-text search with typo-tolerant fallback on app names and tag labels. */
+  query?: string;
+  /** Cursor from `screenCursor`. */
+  before?: string;
+  limit?: number;
+};
+
+/** Filtered, searched, paginated screens in one round trip (the `search_screens` RPC). */
+export async function searchLibrary(db: DbClient, options: LibraryQuery = {}) {
+  const { tagIds = [], query, before, limit = 40 } = options;
+  const [beforeAt, beforeId] = before ? before.split("|") : [];
+  return must(
+    await db.rpc("search_screens", {
+      p_tag_ids: tagIds,
+      p_query: query?.trim() || undefined,
+      p_before_at: beforeAt && beforeId ? beforeAt : undefined,
+      p_before_id: beforeAt && beforeId ? beforeId : undefined,
+      p_limit: limit,
+    }),
+  );
+}
+
 export async function searchScreens(db: DbClient, query: string, limit = 50) {
   return listScreens(db, { query, limit });
 }

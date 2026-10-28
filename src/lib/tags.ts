@@ -2,7 +2,7 @@ import type { DbClient } from "@/lib/db/client";
 import { listFacetsWithTags } from "@/lib/db/facets";
 
 /** Plain shapes the tag picker needs; safe to pass from server to client components. */
-export type TagOption = { id: string; label: string; facetId: string; synonyms: string[] };
+export type TagOption = { id: string; slug: string; label: string; facetId: string; synonyms: string[] };
 export type FacetOption = { id: string; key: string; label: string; tags: TagOption[] };
 
 export async function loadTagOptions(db: DbClient): Promise<FacetOption[]> {
@@ -11,6 +11,6 @@ export async function loadTagOptions(db: DbClient): Promise<FacetOption[]> {
     id: facet.id,
     key: facet.key,
     label: facet.label,
-    tags: facet.tags.map((tag) => ({ id: tag.id, label: tag.label, facetId: facet.id, synonyms: tag.synonyms })),
+    tags: facet.tags.map((tag) => ({ id: tag.id, slug: tag.slug, label: tag.label, facetId: facet.id, synonyms: tag.synonyms })),
   }));
 }

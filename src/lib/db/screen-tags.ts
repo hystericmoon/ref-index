@@ -10,6 +10,12 @@ export async function listScreenTags(db: DbClient, screenId: string) {
   return rows.map((row) => row.tag);
 }
 
+/** How many of the user's screens carry each tag (platform tags include the app's platform). */
+export async function countScreensByTag(db: DbClient): Promise<Map<string, number>> {
+  const rows = must(await db.rpc("screen_tag_counts"));
+  return new Map(rows.map((row) => [row.tag_id, Number(row.screens)]));
+}
+
 /** Bulk tagging: every screen gets every tag. Pairs that already exist are left alone. */
 export async function addScreenTags(db: DbClient, screenIds: string[], tagIds: string[]): Promise<void> {
   const rows = screenIds.flatMap((screen_id) => tagIds.map((tag_id) => ({ screen_id, tag_id })));

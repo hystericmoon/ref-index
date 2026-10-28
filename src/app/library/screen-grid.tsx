@@ -3,6 +3,7 @@
 import { Check, SquareCheck } from "lucide-react";
 import Link from "next/link";
 import { TagChips, TagPicker, useTagCatalog, type TagState } from "@/components/tag-picker";
+import type { LibraryFilters } from "@/lib/library-filters";
 import type { FacetOption, TagOption } from "@/lib/tags";
 import { changeScreenTagsAction } from "./tag-actions";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -113,7 +114,15 @@ export function GridSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
-export function ScreenGrid({ initial, facets }: { initial: ScreenPage; facets: FacetOption[] }) {
+export function ScreenGrid({
+  initial,
+  facets,
+  filters,
+}: {
+  initial: ScreenPage;
+  facets: FacetOption[];
+  filters: LibraryFilters;
+}) {
   const [screens, setScreens] = useState(initial.screens);
   const catalog = useTagCatalog(facets);
   const [selecting, setSelecting] = useState(false);
@@ -202,7 +211,7 @@ export function ScreenGrid({ initial, facets }: { initial: ScreenPage; facets: F
     setLoading(true);
     setFailed(false);
     try {
-      const page = await loadMoreScreens(cursor);
+      const page = await loadMoreScreens(filters, cursor);
       setScreens((prev) => {
         const seen = new Set(prev.map((s) => s.id));
         return [...prev, ...page.screens.filter((s) => !seen.has(s.id))];
@@ -214,7 +223,7 @@ export function ScreenGrid({ initial, facets }: { initial: ScreenPage; facets: F
       busy.current = false;
       setLoading(false);
     }
-  }, [cursor]);
+  }, [cursor, filters]);
 
   useEffect(() => {
     const node = sentinel.current;

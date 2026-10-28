@@ -100,6 +100,18 @@ made, open issues. Keep entries short; this file is read at the start of every s
 - Checked: build, lint, typecheck, RLS test. Not yet checked: tagging 20 screens by mouse and
   keyboard in a signed-in browser.
 
+### Session 6 · Search and filters (2026-10-28)
+- RPC `search_screens` (security invoker, migration 0800): tag filters AND across facets and OR within
+  a facet, websearch on search_vector plus trigram word_similarity ≥ 0.5 on app names and tag labels
+  for typos, `(captured_at, id)` cursor, tag ids per screen, all in one round trip.
+  `screen_tag_counts` feeds the sidebar counts.
+- Decision: a platform tag also matches the app's platform, so iOS works without tagging every screen.
+- /library: search box, facet sidebar with counts (a sheet below md; zero-count tags hidden), removable
+  filter chips, Clear all, a "No screens match" state. The URL holds it all: ?platform=ios&industry=fintech&q=…
+- Checked: `supabase/tests/search_perf.sql` on 1,000 seeded screens (rolled back): iOS+fintech+paywall
+  matches an independent query, OR within a facet, cursor with ties, typos; slowest query 17.7 ms.
+  RLS test still passes. Not yet checked in a signed-in browser. Counts refresh only on reload after tagging.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing

@@ -27,7 +27,7 @@ export async function createTagAction(facetId: string, label: string): Promise<R
   if (!db) return { ok: false, reason: "You're signed out. Sign in again and retry." };
   try {
     const tag = await createTag(db, facetId, name);
-    return { ok: true, data: { id: tag.id, label: tag.label, facetId: tag.facet_id, synonyms: tag.synonyms } };
+    return { ok: true, data: { id: tag.id, slug: tag.slug, label: tag.label, facetId: tag.facet_id, synonyms: tag.synonyms } };
   } catch (error) {
     console.error(error);
     return { ok: false, reason: error instanceof Error && error.message.startsWith("Tag") ? error.message : "We couldn't create the tag." };
