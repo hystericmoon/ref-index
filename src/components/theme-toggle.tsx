@@ -13,7 +13,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={() => setTheme(next)}
-      aria-label={`Switch to ${next} theme`}
+      aria-label="Toggle light and dark theme"
       className="size-11 text-muted-foreground hover:text-foreground"
     >
       <Sun className="size-5 dark:hidden" aria-hidden="true" />

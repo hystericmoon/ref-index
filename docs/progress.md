@@ -51,6 +51,20 @@ made, open issues. Keep entries short; this file is read at the start of every s
   `onlyBuiltDependencies` for Vercel's pnpm 10). `pnpm <script>` fails pnpm's release-age check on
   lucide-react 1.62.0 until about 2026-10-28 06:10 UTC; until then run bins from node_modules/.bin.
 
+### Session 2 · Auth (2026-10-28)
+- Email magic link + Google via Supabase Auth (PKCE): /sign-in (server actions, inline errors),
+  /auth/callback exchanges the code, `next` is limited to same-site paths. `src/proxy.ts` refreshes
+  the session and sends signed-out visitors on /library/* to /sign-in?next=…
+- Site header in the root layout: theme toggle + account menu (email, Library, Sign out) or a
+  Sign in link. /library shows an empty state with an Upload CTA (/library/upload is Session 3).
+  Fixed a Session 0 hydration mismatch: the theme toggle's label no longer depends on the theme.
+- Checked locally: redirects, email validation, bad-link error, open-redirect guard, Google hand-off.
+  Not yet checked: a real magic-link sign-in → /library, and sign-out (needs someone to click the email).
+- Open: Google returns "provider is not enabled" until a Google Cloud OAuth client is created
+  (redirect URI https://kolzsxfgqodulzteocnd.supabase.co/auth/v1/callback) and the client ID/secret
+  are added in Supabase → Auth → Providers → Google. Supabase's built-in email sender is
+  rate-limited; add custom SMTP before inviting collaborators.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 
