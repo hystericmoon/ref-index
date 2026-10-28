@@ -141,6 +141,20 @@ made, open issues. Keep entries short; this file is read at the start of every s
 - Checked in the browser: both tabs, the deep links for "onboarding" (8 search / 6 tag / 7 browse),
   thumbnails, no console errors. Build, lint and typecheck pass.
 
+### Session 9 · Accessibility, performance, launch (2026-10-28)
+- Contrast (WCAG 2.x, computed from the oklch tokens): every text/background pair is ≥ 4.9:1 in both
+  themes (lowest: destructive on card, dark, 4.94). Focus-visible outline and reduced motion were
+  already global; 44px targets are on all mobile controls.
+- Alt text strategy: app name plus screen-type tags ("Revolut, paywall screen") for viewer images and
+  as the grid cards' accessible names (`src/lib/screen-alt.ts`). Decorative thumbnails use alt="".
+- Metadata: metadataBase, Open Graph and Twitter cards, theme colours, and a generated
+  /opengraph-image (1200×630) for the directory.
+- Lighthouse 12.8 (mobile, local production build), performance / accessibility / best practices / SEO:
+  `/` 90/100/100/100 · `/?view=galleries&q=onboarding` 92/100/100/100 · `/sign-in` 93/100/100/100.
+  /library and the viewer need a signed-in session, which Lighthouse can't get, so they weren't measured.
+- Home LCP is 3.6 s simulated; the HTML carries all 414 showcase entries. If it slips under 90, paginate
+  the showcase on the server.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing

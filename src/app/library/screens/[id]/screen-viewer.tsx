@@ -9,17 +9,13 @@ import { TagChips, TagPicker, useTagCatalog } from "@/components/tag-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { screenAlt } from "@/lib/screen-alt";
 import { neighborsInSequence } from "@/lib/screen-sequence";
 import type { FacetOption, TagOption } from "@/lib/tags";
 import { addToFlowAction, removeFromFlowAction, saveNotesAction } from "./actions";
 import type { ScreenDetail } from "./data";
 
 const PLATFORMS: Record<string, string> = { ios: "iOS", android: "Android", web: "Web" };
-
-/** Alt text: app name plus the screen types it's tagged with, e.g. "Revolut, paywall screen". */
-export function screenAlt(appName: string, screenTypes: string[]) {
-  return screenTypes.length ? `${appName}, ${screenTypes.join(" and ").toLowerCase()} screen` : `${appName} screen`;
-}
 
 function isEditable(target: EventTarget | null) {
   const el = target as HTMLElement | null;

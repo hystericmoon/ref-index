@@ -30,7 +30,7 @@ The next session picks up from `docs/progress.md`, not from chat history.
 | 6 | ◆ Search and filters | ✅ (not checked in a signed-in browser) |
 | 7 | Screen viewer and flows | ✅ (not checked in a signed-in browser) |
 | 8 | Directory and site thumbnails | ✅ (3 sites without thumbnails) |
-| 9 | Accessibility, performance, launch | ☐ |
+| 9 | Accessibility, performance, launch | ✅ (/library and viewer not measured) |
 
 ---
 

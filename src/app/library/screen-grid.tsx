@@ -4,6 +4,7 @@ import { Check, SquareCheck } from "lucide-react";
 import Link from "next/link";
 import { TagChips, TagPicker, useTagCatalog, type TagState } from "@/components/tag-picker";
 import type { LibraryFilters } from "@/lib/library-filters";
+import { screenAlt } from "@/lib/screen-alt";
 import { setScreenSequence } from "@/lib/screen-sequence";
 import type { FacetOption, TagOption } from "@/lib/tags";
 import { changeScreenTagsAction } from "./tag-actions";
@@ -45,7 +46,7 @@ function placeInColumns(screens: GridScreen[], columns: number): GridScreen[][] 
 
 type Selection = { selected: boolean; onToggle: (range: boolean) => void } | null;
 
-function ScreenCard({ screen, selection }: { screen: GridScreen; selection: Selection }) {
+function ScreenCard({ screen, selection, label }: { screen: GridScreen; selection: Selection; label: string }) {
   const className =
     "group relative block w-full overflow-hidden rounded-lg border bg-muted outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";
   const style = { aspectRatio: `1 / ${ratio(screen)}` };
@@ -76,7 +77,14 @@ function ScreenCard({ screen, selection }: { screen: GridScreen; selection: Sele
 
   if (!selection) {
     return (
-      <Link href={`/library/screens/${screen.id}`} className={className} style={style} data-screen-id={screen.id} scroll={false}>
+      <Link
+        href={`/library/screens/${screen.id}`}
+        className={className}
+        style={style}
+        data-screen-id={screen.id}
+        scroll={false}
+        aria-label={label}
+      >
         {content}
       </Link>
     );
@@ -86,6 +94,7 @@ function ScreenCard({ screen, selection }: { screen: GridScreen; selection: Sele
       type="button"
       role="checkbox"
       aria-checked={selection.selected}
+      aria-label={label}
       onClick={(event) => selection.onToggle(event.shiftKey)}
       className={cn(className, selection.selected && "ring-[3px] ring-primary")}
       style={style}
@@ -126,6 +135,16 @@ export function ScreenGrid({
 }) {
   const [screens, setScreens] = useState(initial.screens);
   const catalog = useTagCatalog(facets);
+  const screenTypeFacetId = catalog.facets.find((f) => f.key === "screen_type")?.id;
+  /** Accessible name: app name plus screen types, e.g. "Revolut, paywall screen". */
+  const labelFor = (screen: GridScreen) =>
+    screenAlt(
+      screen.appName,
+      screen.tagIds.flatMap((id) => {
+        const tag = catalog.tagById.get(id);
+        return tag && tag.facetId === screenTypeFacetId ? [tag.label] : [];
+      }),
+    );
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [anchor, setAnchor] = useState<number | null>(null);
@@ -277,6 +296,7 @@ export function ScreenGrid({
                 <ScreenCard
                   key={screen.id}
                   screen={screen}
+                  label={labelFor(screen)}
                   selection={
                     selecting
                       ? { selected: selected.has(screen.id), onToggle: (range) => toggle(indexOf.get(screen.id)!, range) }

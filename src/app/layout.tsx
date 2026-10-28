@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -22,10 +22,22 @@ const code = IBM_Plex_Mono({
   weight: ["400", "500"],
 });
 
+const description =
+  "Websites and apps picked by 13 design galleries in one place, one search box for 21 galleries, and a private, taggable library of UI screenshots.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ref-index.vercel.app"),
   title: { default: "Ref Index", template: "%s · Ref Index" },
-  description:
-    "A UI screenshot library and a searchable index of the sites design galleries feature.",
+  description,
+  openGraph: { type: "website", siteName: "Ref Index", title: "Ref Index", description, url: "/" },
+  twitter: { card: "summary_large_image", title: "Ref Index", description },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f6f3" },
+    { media: "(prefers-color-scheme: dark)", color: "#111613" },
+  ],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
