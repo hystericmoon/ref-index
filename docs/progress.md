@@ -155,6 +155,19 @@ made, open issues. Keep entries short; this file is read at the start of every s
 - Home LCP is 3.6 s simulated; the HTML carries all 414 showcase entries. If it slips under 90, paginate
   the showcase on the server.
 
+### Showcase backfill (2026-10-29)
+- `scripts/backfill-showcase.ts` read every page each gallery lists (robots.txt honoured, ≥1.5 s per
+  site, back-off on 429/503/403) and added 20,374 items through `add_showcase_entries`: the showcase now
+  has 20,934 items and 24,199 gallery credits. Progress and SQL chunks are in `tmp/backfill/`.
+- `galleries.ts` gained `parseGallery`, live-site links (Godly, CSSDA, Awwwards, LaudableApps, Apple),
+  Brutalist Websites and Apple Design Awards readers, a One Page Love "Inspiration only" filter and
+  better name cleaning. The weekly refresh still reads page one only, with the same small limits.
+- Not backfilled: Land-book (Cloudflare challenge), SiteInspire (429 on every listing page; the feed
+  has no pages). Stopped early: CSS Design Awards at page 186 (CAPTCHA), One Page Love at the
+  600-page cap (~6,000 of 9,000+), Apple Design Awards before 2020 (403).
+- Open: `listShowcase` reads every item in one request, so PostgREST's row cap (usually 1,000) and the
+  payload size now matter. Paginate it on the server before relying on the full list.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing
