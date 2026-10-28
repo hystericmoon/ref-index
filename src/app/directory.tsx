@@ -2,7 +2,7 @@
 
 import { ExternalLink, Search } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ShowcaseEntry } from "@/lib/db/showcase";
 import { KIND_RANK, MEDIUM_GROUPS, SUGGESTIONS, sourceAction, type DirectorySource } from "@/lib/directory";
 import { cn } from "@/lib/utils";
@@ -96,32 +96,25 @@ function SearchField({ id, label, value, onChange, placeholder }: { id: string; 
   );
 }
 
-function ShowcaseView({ entries }: { entries: ShowcaseEntry[] }) {
+function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[]; total: number; galleries: [string, number][] }) {
+  // The page carries the first screenful; the full list (for filtering) loads right after.
+  const [entries, setEntries] = useState(initial);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/showcase.json")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((all: ShowcaseEntry[] | null) => !cancelled && all?.length && setEntries(all))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [q, setQ] = useState("");
   const [medium, setMedium] = useState<"all" | "web" | "3d" | "mobile">("all");
   const [gallery, setGallery] = useState("");
   const [shown, setShown] = useState(PAGE);
 
-  // Interleave galleries so the default view mixes sources instead of one gallery at a time.
-  const ordered = useMemo(() => {
-    const buckets = new Map<string, ShowcaseEntry[]>();
-    for (const e of entries) {
-      const g = e.featured[0]?.gallery ?? "";
-      if (!buckets.has(g)) buckets.set(g, []);
-      buckets.get(g)!.push(e);
-    }
-    const out: ShowcaseEntry[] = [];
-    const lists = [...buckets.values()];
-    for (let i = 0; out.length < entries.length; i++) for (const list of lists) if (list[i]) out.push(list[i]);
-    return out;
-  }, [entries]);
-
-  const galleries = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const e of entries) for (const f of e.featured) counts.set(f.gallery, (counts.get(f.gallery) ?? 0) + 1);
-    return [...counts].sort(([a], [b]) => a.localeCompare(b));
-  }, [entries]);
-
+  const ordered = entries;
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const list = ordered.filter((e) => {
     if (medium === "web" && e.platform !== "web") return false;
@@ -167,7 +160,7 @@ function ShowcaseView({ entries }: { entries: ShowcaseEntry[] }) {
         </label>
       </div>
       <p aria-live="polite" className="text-sm text-muted-foreground tabular-nums">
-        <b className="font-semibold text-foreground">{list.length}</b> of {entries.length} sites and apps
+        <b className="font-semibold text-foreground">{list.length}</b> of {Math.max(total, entries.length)} sites and apps
       </p>
       {list.length === 0 ? (
         <p className="rounded-xl border border-dashed bg-card p-8 text-center text-muted-foreground">
@@ -404,11 +397,15 @@ function GalleriesView({ sources, q, setQ }: { sources: DirectorySource[]; q: st
 export function Directory({
   sources,
   showcase,
+  showcaseTotal,
+  galleryCounts,
   initialView,
   initialQuery,
 }: {
   sources: DirectorySource[];
   showcase: ShowcaseEntry[];
+  showcaseTotal: number;
+  galleryCounts: [string, number][];
   initialView: View;
   initialQuery: string;
 }) {
@@ -418,7 +415,7 @@ export function Directory({
   useUrlState(view, view === "galleries" ? q : "");
 
   const TABS: { id: View; label: string; count: number }[] = [
-    { id: "showcase", label: "Showcase", count: showcase.length },
+    { id: "showcase", label: "Showcase", count: showcaseTotal },
     { id: "galleries", label: "Search the galleries", count: sources.length },
   ];
 
@@ -455,7 +452,7 @@ export function Directory({
         ))}
       </div>
       <div role="tabpanel" id="panel-showcase" aria-labelledby="tab-showcase" hidden={view !== "showcase"}>
-        <ShowcaseView entries={showcase} />
+        <ShowcaseView initial={showcase} total={showcaseTotal} galleries={galleryCounts} />
       </div>
       <div role="tabpanel" id="panel-galleries" aria-labelledby="tab-galleries" hidden={view !== "galleries"}>
         <GalleriesView sources={sources} q={q} setQ={setQ} />

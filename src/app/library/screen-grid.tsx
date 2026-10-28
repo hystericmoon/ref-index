@@ -2,6 +2,7 @@
 
 import { Check, SquareCheck } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TagChips, TagPicker, useTagCatalog, type TagState } from "@/components/tag-picker";
 import type { LibraryFilters } from "@/lib/library-filters";
 import { screenAlt } from "@/lib/screen-alt";
@@ -133,6 +134,7 @@ export function ScreenGrid({
   facets: FacetOption[];
   filters: LibraryFilters;
 }) {
+  const router = useRouter();
   const [screens, setScreens] = useState(initial.screens);
   const catalog = useTagCatalog(facets);
   const screenTypeFacetId = catalog.facets.find((f) => f.key === "screen_type")?.id;
@@ -205,6 +207,8 @@ export function ScreenGrid({
     }));
     if (result.ok) {
       setStatus(change === "add" ? `Added ${tag.label} to ${ids.length} ${noun}` : `Removed ${tag.label} from ${ids.length} ${noun}`);
+      // Re-read the server parts (sidebar tag counts); the grid keeps its own state.
+      router.refresh();
     } else {
       // Roll back only this tag, so a later change that did save isn't undone.
       setScreens((prev) =>

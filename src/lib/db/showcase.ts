@@ -9,6 +9,20 @@ export type ShowcaseEntry = {
   featured: { gallery: string; sourceUrl: string }[];
 };
 
+/** Mix galleries (one from each in turn) so the default view isn't one gallery at a time. */
+export function interleaveByGallery(entries: ShowcaseEntry[]): ShowcaseEntry[] {
+  const buckets = new Map<string, ShowcaseEntry[]>();
+  for (const e of entries) {
+    const g = e.featured[0]?.gallery ?? "";
+    if (!buckets.has(g)) buckets.set(g, []);
+    buckets.get(g)!.push(e);
+  }
+  const lists = [...buckets.values()];
+  const out: ShowcaseEntry[] = [];
+  for (let i = 0; out.length < entries.length; i++) for (const list of lists) if (list[i]) out.push(list[i]);
+  return out;
+}
+
 /** Every showcase item with the galleries that featured it, newest first. */
 export async function listShowcase(db: DbClient): Promise<ShowcaseEntry[]> {
   const { data, error } = await db
