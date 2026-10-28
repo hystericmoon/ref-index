@@ -18,10 +18,10 @@ export function screenCursor(screen: Pick<Screen, "captured_at" | "id">): string
   return `${screen.captured_at}|${screen.id}`;
 }
 
-/** The signed-in user's screens, newest first, with their app. */
+/** The signed-in user's screens, newest first, with their app and tag ids. */
 export async function listScreens(db: DbClient, options: ListScreensOptions = {}) {
   const { appId, tagIds, query, before, limit = 50 } = options;
-  let q = db.from("screens").select("*, app:apps(id, name, platform)");
+  let q = db.from("screens").select("*, app:apps(id, name, platform), screen_tags(tag_id)");
   if (tagIds?.length) {
     const tagged = must(await db.from("screen_tags").select("screen_id").in("tag_id", tagIds));
     q = q.in("id", [...new Set(tagged.map((row) => row.screen_id))]);

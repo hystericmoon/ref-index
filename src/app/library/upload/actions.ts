@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createApp, type App } from "@/lib/db/apps";
 import { appendFlowScreens } from "@/lib/db/flow-screens";
 import { createFlow, listFlows, type Flow } from "@/lib/db/flows";
+import { addScreenTags } from "@/lib/db/screen-tags";
 import { createScreens } from "@/lib/db/screens";
 import { createClient } from "@/lib/supabase/server";
 
@@ -73,8 +74,10 @@ export async function processScreen(input: {
   path: string;
   appId: string;
   capturedAt?: string;
+  tagIds?: string[];
 }): Promise<ProcessResult> {
   const { screenId, path, appId } = input;
+  const tagIds = (input.tagIds ?? []).filter((id) => UUID.test(id)).slice(0, 50);
   try {
     const { user, db } = await signedInClient();
     if (!UUID.test(screenId) || !UUID.test(appId)) return { ok: false, reason: "Invalid upload.", retry: false };
@@ -118,6 +121,7 @@ export async function processScreen(input: {
       // A retry after the row was already saved.
       if ((error as { code?: string }).code !== "23505") throw error;
     }
+    await addScreenTags(db, [screenId], tagIds);
     return { ok: true };
   } catch (error) {
     return { ...failure(error, "We couldn't save this screen. Try again."), retry: true };

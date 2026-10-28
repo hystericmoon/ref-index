@@ -2,13 +2,15 @@ import { ImagePlus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
+import { loadTagOptions } from "@/lib/tags";
 import { loadScreenPage } from "./data";
 import { ScreenGrid } from "./screen-grid";
 
 export const metadata: Metadata = { title: "Library" };
 
 export default async function LibraryPage() {
-  const page = await loadScreenPage();
+  const [page, facets] = await Promise.all([loadScreenPage(), createClient().then(loadTagOptions)]);
   const empty = page.screens.length === 0;
 
   return (
@@ -45,7 +47,7 @@ export default async function LibraryPage() {
           </Button>
         </section>
       ) : (
-        <ScreenGrid initial={page} />
+        <ScreenGrid initial={page} facets={facets} />
       )}
     </main>
   );

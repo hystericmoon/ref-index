@@ -10,6 +10,7 @@ export type GridScreen = {
   width: number | null;
   height: number | null;
   thumbUrl: string | null;
+  tagIds: string[];
 };
 
 export type ScreenPage = { screens: GridScreen[]; nextCursor: string | null };
@@ -26,6 +27,7 @@ export async function loadScreenPage(before?: string): Promise<ScreenPage> {
       width: row.width,
       height: row.height,
       thumbUrl: row.thumb_path ? (urls.get(row.thumb_path) ?? null) : null,
+      tagIds: row.screen_tags.map((st) => st.tag_id),
     })),
     nextCursor: rows.length === PAGE_SIZE ? screenCursor(rows[rows.length - 1]) : null,
   };

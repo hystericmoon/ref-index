@@ -1,6 +1,10 @@
 "use client";
 
+import { Check, SquareCheck } from "lucide-react";
 import Link from "next/link";
+import { TagChips, TagPicker, useTagCatalog, type TagState } from "@/components/tag-picker";
+import type { FacetOption, TagOption } from "@/lib/tags";
+import { changeScreenTagsAction } from "./tag-actions";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -37,13 +41,14 @@ function placeInColumns(screens: GridScreen[], columns: number): GridScreen[][] 
   return result;
 }
 
-function ScreenCard({ screen }: { screen: GridScreen }) {
-  return (
-    <Link
-      href={`/library/screens/${screen.id}`}
-      className="group relative block overflow-hidden rounded-lg border bg-muted outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-      style={{ aspectRatio: `1 / ${ratio(screen)}` }}
-    >
+type Selection = { selected: boolean; onToggle: (range: boolean) => void } | null;
+
+function ScreenCard({ screen, selection }: { screen: GridScreen; selection: Selection }) {
+  const className =
+    "group relative block w-full overflow-hidden rounded-lg border bg-muted outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";
+  const style = { aspectRatio: `1 / ${ratio(screen)}` };
+  const content = (
+    <>
       {screen.thumbUrl && (
         // eslint-disable-next-line @next/next/no-img-element -- signed Storage URLs, already 480px WebP
         <img
@@ -56,10 +61,44 @@ function ScreenCard({ screen }: { screen: GridScreen }) {
           className="size-full object-cover object-top"
         />
       )}
-      <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-3 pt-6 pb-2 text-sm font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+      <span
+        className={cn(
+          "absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/75 to-transparent px-3 pt-6 pb-2 text-left text-sm font-medium text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100",
+          selection?.selected && "opacity-100",
+        )}
+      >
         {screen.appName}
       </span>
-    </Link>
+    </>
+  );
+
+  if (!selection) {
+    return (
+      <Link href={`/library/screens/${screen.id}`} className={className} style={style}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={selection.selected}
+      onClick={(event) => selection.onToggle(event.shiftKey)}
+      className={cn(className, selection.selected && "ring-[3px] ring-primary")}
+      style={style}
+    >
+      {content}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute top-2 left-2 flex size-6 items-center justify-center rounded-md border-2 border-white bg-black/30 shadow",
+          selection.selected && "border-primary bg-primary text-primary-foreground",
+        )}
+      >
+        {selection.selected && <Check className="size-4" />}
+      </span>
+    </button>
   );
 }
 
@@ -74,8 +113,83 @@ export function GridSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
-export function ScreenGrid({ initial }: { initial: ScreenPage }) {
+export function ScreenGrid({ initial, facets }: { initial: ScreenPage; facets: FacetOption[] }) {
   const [screens, setScreens] = useState(initial.screens);
+  const catalog = useTagCatalog(facets);
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [anchor, setAnchor] = useState<number | null>(null);
+  const [status, setStatus] = useState("");
+  const [tagError, setTagError] = useState<string | null>(null);
+
+  function toggle(index: number, range: boolean) {
+    const id = screens[index].id;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (range && anchor !== null) {
+        const [from, to] = anchor < index ? [anchor, index] : [index, anchor];
+        const value = !prev.has(id) || prev.has(screens[anchor].id);
+        screens.slice(from, to + 1).forEach((s) => (value ? next.add(s.id) : next.delete(s.id)));
+      } else if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setAnchor(index);
+  }
+
+  function stopSelecting() {
+    setSelecting(false);
+    setSelected(new Set());
+    setAnchor(null);
+    setTagError(null);
+  }
+
+  const selectedScreens = screens.filter((s) => selected.has(s.id));
+  const stateOf = (tagId: string): TagState => {
+    const count = selectedScreens.filter((s) => s.tagIds.includes(tagId)).length;
+    return count === 0 ? "none" : count === selectedScreens.length ? "all" : "some";
+  };
+  const selectionTags = [...new Set(selectedScreens.flatMap((s) => s.tagIds))]
+    .flatMap((id) => catalog.tagById.get(id) ?? [])
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  /** Optimistic: update the grid now, put the old tags back if saving fails. */
+  async function changeTag(tag: TagOption, change: "add" | "remove") {
+    const ids = selectedScreens.map((s) => s.id);
+    if (!ids.length) return;
+    const before = new Map(selectedScreens.map((s) => [s.id, s.tagIds]));
+    setTagError(null);
+    setScreens((prev) =>
+      prev.map((s) =>
+        before.has(s.id)
+          ? {
+              ...s,
+              tagIds: change === "add" ? [...new Set([...s.tagIds, tag.id])] : s.tagIds.filter((id) => id !== tag.id),
+            }
+          : s,
+      ),
+    );
+    const noun = ids.length === 1 ? "screen" : "screens";
+    const result = await changeScreenTagsAction(change, ids, [tag.id]).catch(() => ({
+      ok: false as const,
+      reason: "Network error. Check your connection and try again.",
+    }));
+    if (result.ok) {
+      setStatus(change === "add" ? `Added ${tag.label} to ${ids.length} ${noun}` : `Removed ${tag.label} from ${ids.length} ${noun}`);
+    } else {
+      // Roll back only this tag, so a later change that did save isn't undone.
+      setScreens((prev) =>
+        prev.map((s) => {
+          if (!before.has(s.id)) return s;
+          const had = before.get(s.id)!.includes(tag.id);
+          const without = s.tagIds.filter((id) => id !== tag.id);
+          return { ...s, tagIds: had ? [...without, tag.id] : without };
+        }),
+      );
+      setTagError(result.reason);
+      setStatus("");
+    }
+  }
   const [cursor, setCursor] = useState(initial.nextCursor);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -112,14 +226,51 @@ export function ScreenGrid({ initial }: { initial: ScreenPage }) {
     return () => observer.disconnect();
   }, [cursor, failed, loadMore]);
 
+  const indexOf = new Map(screens.map((s, i) => [s.id, i]));
+
   return (
     <section aria-label="Your screens" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-muted-foreground">
+          {selecting
+            ? "Click screens to select them. Shift-click selects a range."
+            : `${screens.length}${cursor ? "+" : ""} ${screens.length === 1 ? "screen" : "screens"}`}
+        </p>
+        {selecting ? (
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              className="h-11 px-4"
+              onClick={() => setSelected(selected.size === screens.length ? new Set() : new Set(screens.map((s) => s.id)))}
+            >
+              {selected.size === screens.length ? "Select none" : "Select all"}
+            </Button>
+            <Button variant="outline" className="h-11 px-4" onClick={stopSelecting}>
+              Done
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" className="h-11 px-4" onClick={() => setSelecting(true)}>
+            <SquareCheck aria-hidden="true" />
+            Select
+          </Button>
+        )}
+      </div>
+
       {LAYOUTS.map(({ columns, className }) => (
         <div key={columns} className={cn("gap-3 sm:gap-4", className)} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
           {placeInColumns(screens, columns).map((column, i) => (
             <div key={i} className="flex min-w-0 flex-col gap-3 sm:gap-4">
               {column.map((screen) => (
-                <ScreenCard key={screen.id} screen={screen} />
+                <ScreenCard
+                  key={screen.id}
+                  screen={screen}
+                  selection={
+                    selecting
+                      ? { selected: selected.has(screen.id), onToggle: (range) => toggle(indexOf.get(screen.id)!, range) }
+                      : null
+                  }
+                />
               ))}
             </div>
           ))}
@@ -137,8 +288,36 @@ export function ScreenGrid({ initial }: { initial: ScreenPage }) {
       )}
       <div ref={sentinel} aria-hidden="true" />
       <p aria-live="polite" className="sr-only">
-        {loading ? "Loading more screens" : `${screens.length} screens shown`}
+        {loading ? "Loading more screens" : status}
       </p>
+
+      {selecting && (
+        <div
+          role="region"
+          aria-label="Tag selected screens"
+          className="sticky bottom-4 z-10 flex flex-col gap-3 rounded-xl border bg-background/95 p-3 shadow-lg backdrop-blur"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-auto text-sm font-medium">
+              {selected.size} {selected.size === 1 ? "screen" : "screens"} selected
+            </span>
+            <TagPicker
+              facets={catalog.facets}
+              stateOf={stateOf}
+              onChange={changeTag}
+              onCreated={catalog.addTag}
+              disabled={selected.size === 0}
+            />
+          </div>
+          <TagChips tags={selectionTags} stateOf={stateOf} onRemove={(tag) => changeTag(tag, "remove")} />
+          {status && <p className="text-sm text-muted-foreground">{status}</p>}
+          {tagError && (
+            <p role="alert" className="text-sm text-destructive">
+              {tagError}
+            </p>
+          )}
+        </div>
+      )}
     </section>
   );
 }

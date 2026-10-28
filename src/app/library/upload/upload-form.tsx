@@ -12,7 +12,9 @@ import type { App } from "@/lib/db/apps";
 import type { Flow } from "@/lib/db/flows";
 import { createClient } from "@/lib/supabase/client";
 import { supabaseKey, supabaseUrl } from "@/lib/supabase/env";
+import type { FacetOption } from "@/lib/tags";
 import { cn } from "@/lib/utils";
+import { TagChips, TagPicker, useTagCatalog } from "@/components/tag-picker";
 import {
   addScreensToFlowAction,
   createAppAction,
@@ -39,6 +41,7 @@ type Item = {
   retryFrom?: "upload" | "process" | null;
   appId?: string;
   flowId?: string;
+  tagIds?: string[];
 };
 
 const selectClass =
@@ -86,8 +89,10 @@ async function inBatches<T>(items: T[], limit: number, run: (item: T) => Promise
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
 }
 
-export function UploadForm({ apps: initialApps }: { apps: App[] }) {
+export function UploadForm({ apps: initialApps, facets: initialFacets }: { apps: App[]; facets: FacetOption[] }) {
   const [supabase] = useState(createClient);
+  const catalog = useTagCatalog(initialFacets);
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [apps, setApps] = useState(initialApps);
   const [appChoice, setAppChoice] = useState(initialApps.length ? "" : NEW);
   const [newAppName, setNewAppName] = useState("");
@@ -168,6 +173,7 @@ export function UploadForm({ apps: initialApps }: { apps: App[] }) {
       path,
       appId,
       capturedAt: new Date(item.file.lastModified).toISOString(),
+      tagIds: item.tagIds,
     }).catch(() => ({ ok: false as const, reason: "Network error. Check your connection and retry.", retry: true }));
     if (!result.ok) {
       patch(item.id, { status: "failed", reason: result.reason, retryFrom: result.retry ? "process" : null });
@@ -222,8 +228,9 @@ export function UploadForm({ apps: initialApps }: { apps: App[] }) {
       if (!targets) return;
       const { appId, flowId } = targets;
       const saved = new Set<string>();
-      queued.forEach((item) => patch(item.id, { appId, flowId }));
-      await inBatches(queued, CONCURRENCY, async (item) => {
+      const batch = queued.map((item) => ({ ...item, appId, flowId, tagIds }));
+      batch.forEach((item) => patch(item.id, { appId, flowId, tagIds }));
+      await inBatches(batch, CONCURRENCY, async (item) => {
         if (await runItem(item, appId, "upload")) saved.add(item.id);
       });
       if (flowId && saved.size) {
@@ -348,6 +355,27 @@ export function UploadForm({ apps: initialApps }: { apps: App[] }) {
             />
           </div>
         )}
+        <div className="flex flex-col gap-2 sm:col-span-2">
+          <span className="text-sm font-medium">
+            Tags <span className="font-normal text-muted-foreground">(optional, applied to every file)</span>
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <TagPicker
+              facets={catalog.facets}
+              stateOf={(id) => (tagIds.includes(id) ? "all" : "none")}
+              onChange={(tag, change) =>
+                setTagIds((prev) => (change === "add" ? [...new Set([...prev, tag.id])] : prev.filter((id) => id !== tag.id)))
+              }
+              onCreated={catalog.addTag}
+              disabled={running}
+            />
+            <TagChips
+              tags={tagIds.flatMap((id) => catalog.tagById.get(id) ?? [])}
+              onRemove={(tag) => setTagIds((prev) => prev.filter((id) => id !== tag.id))}
+              disabled={running}
+            />
+          </div>
+        </div>
       </fieldset>
 
       <label

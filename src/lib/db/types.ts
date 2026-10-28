@@ -278,6 +278,7 @@ export type Database = {
       tags: {
         Row: {
           created_at: string
+          created_by: string | null
           facet_id: string
           id: string
           label: string
@@ -286,6 +287,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           facet_id: string
           id?: string
           label: string
@@ -294,6 +296,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           facet_id?: string
           id?: string
           label?: string

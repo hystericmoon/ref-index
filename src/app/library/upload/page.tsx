@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { listApps } from "@/lib/db/apps";
 import { createClient } from "@/lib/supabase/server";
+import { loadTagOptions } from "@/lib/tags";
 import { UploadForm } from "./upload-form";
 
 export const metadata: Metadata = { title: "Upload screens" };
@@ -11,7 +12,8 @@ export const metadata: Metadata = { title: "Upload screens" };
 export const maxDuration = 60;
 
 export default async function UploadPage() {
-  const apps = await listApps(await createClient());
+  const db = await createClient();
+  const [apps, facets] = await Promise.all([listApps(db), loadTagOptions(db)]);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 pb-24 sm:px-6">
@@ -26,7 +28,7 @@ export default async function UploadPage() {
         <h1 className="font-display text-3xl font-bold tracking-tight">Upload screens</h1>
         <p className="text-muted-foreground">PNG, JPG or WebP, up to 10 MB each.</p>
       </div>
-      <UploadForm apps={apps} />
+      <UploadForm apps={apps} facets={facets} />
     </main>
   );
 }

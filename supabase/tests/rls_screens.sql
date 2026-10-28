@@ -81,6 +81,24 @@ begin
 
   if exists (select 1 from storage.objects where bucket_id = 'screens') then raise exception 'FAIL: B can list A''s screen files'; end if;
 
+  insert into public.tags (facet_id, slug, label)
+    select id, 'rls-test-tag', 'RLS test tag' from public.facets where key = 'pattern';
+  if not exists (select 1 from public.tags where slug = 'rls-test-tag' and created_by = 'bbbbbbbb-0000-4000-8000-000000000002')
+    then raise exception 'FAIL: B''s new tag should record B as creator'; end if;
+
+  begin
+    insert into public.tags (facet_id, slug, label, created_by)
+      select id, 'rls-forged-tag', 'Forged', 'aaaaaaaa-0000-4000-8000-000000000001' from public.facets where key = 'pattern';
+    raise exception 'FAIL: B created a tag in A''s name';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
+    update public.tags set label = 'Renamed' where slug = 'log-in';
+    raise exception 'FAIL: B renamed a shared tag';
+  exception when insufficient_privilege then null;
+  end;
+
   begin
     insert into storage.objects (bucket_id, name)
       values ('screens', 'aaaaaaaa-0000-4000-8000-000000000001/planted.png');
@@ -104,6 +122,11 @@ begin
   exception when insufficient_privilege then null;
   end;
   if exists (select 1 from storage.objects where bucket_id = 'screens') then raise exception 'FAIL: anon can list screen files'; end if;
+  begin
+    insert into public.tags (facet_id, slug, label) select id, 'anon-tag', 'Anon' from public.facets where key = 'pattern';
+    raise exception 'FAIL: anon created a tag';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 reset role;

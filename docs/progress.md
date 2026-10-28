@@ -89,6 +89,17 @@ made, open issues. Keep entries short; this file is read at the start of every s
 - Checked: build, lint, typecheck, cursor filter. Not yet checked: 200 seeded screens scrolling, and
   how the grid looks with real screens (needs a signed-in browser).
 
+### Session 5 · Tagging UI (2026-10-28)
+- TagPicker (src/components/tag-picker.tsx): shadcn Command in a Popover, grouped by facet, filters
+  on label and synonyms, tri-state checks for bulk edits, "Create “x” in <facet>" when nothing matches.
+  Used on the upload form (tags applied to every file, saved by processScreen) and in a Select mode on
+  the grid (click/Space toggles, Shift-click selects a range, Select all, sticky toolbar with chips).
+- Bulk add/remove is optimistic; on error only that tag is rolled back, with an inline reason.
+- Migration 0700: tags.created_by; signed-in users may insert tags (in their own name, no synonyms)
+  but not edit or delete them. New tags are shared with everyone. RLS test covers this.
+- Checked: build, lint, typecheck, RLS test. Not yet checked: tagging 20 screens by mouse and
+  keyboard in a signed-in browser.
+
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
 - Upload: bulk tagging at upload, HEIC, paste from clipboard, removing originals whose processing
