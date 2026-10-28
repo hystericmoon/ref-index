@@ -1,10 +1,10 @@
-import { interleaveByGallery, listShowcase } from "@/lib/db/showcase";
+import { listGalleryCounts, searchShowcase } from "@/lib/db/showcase";
 import { listSources } from "@/lib/db/sources";
 import type { DirectorySource } from "@/lib/directory";
 import { createPublicClient } from "@/lib/supabase/public";
 import { Directory } from "./directory";
 
-/** The HTML carries one screenful of showcase entries; the rest loads from /showcase.json. */
+/** The HTML carries one screenful of showcase entries; search and paging go through /showcase.json. */
 const FIRST_SCREEN = 60;
 
 export default async function Home({
@@ -13,12 +13,14 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const db = createPublicClient();
-  const [params, sources, showcase] = await Promise.all([searchParams, listSources(db), listShowcase(db)]);
+  const [params, sources, showcase, galleryCounts] = await Promise.all([
+    searchParams,
+    listSources(db),
+    searchShowcase(db, { limit: FIRST_SCREEN }),
+    listGalleryCounts(db),
+  ]);
   const view = params.view === "galleries" ? "galleries" : "showcase";
   const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
-
-  const galleryCounts = new Map<string, number>();
-  for (const e of showcase) for (const f of e.featured) galleryCounts.set(f.gallery, (galleryCounts.get(f.gallery) ?? 0) + 1);
 
   const directory: DirectorySource[] = sources.map((s) => ({
     id: s.id,
@@ -38,15 +40,15 @@ export default async function Home({
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-4xl font-bold tracking-tight text-balance sm:text-5xl">Ref Index</h1>
         <p className="max-w-[62ch] text-muted-foreground">
-          Websites and apps picked by {galleryCounts.size} design galleries, collected in one place, plus one search box
+          Websites and apps picked by {galleryCounts.length} design galleries, collected in one place, plus one search box
           for {sources.length} galleries&apos; own search and tag pages.
         </p>
       </header>
       <Directory
         sources={directory}
-        showcase={interleaveByGallery(showcase).slice(0, FIRST_SCREEN)}
-        showcaseTotal={showcase.length}
-        galleryCounts={[...galleryCounts].sort(([a], [b]) => a.localeCompare(b))}
+        showcase={showcase.items}
+        showcaseTotal={showcase.total}
+        galleryCounts={galleryCounts}
         initialView={view}
         initialQuery={q}
       />

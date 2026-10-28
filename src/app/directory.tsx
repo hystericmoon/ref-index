@@ -9,9 +9,7 @@ import { cn } from "@/lib/utils";
 
 type View = "showcase" | "galleries";
 
-const PAGE = 60;
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
-const isMobile = (p: string) => p === "ios" || p === "android" || p === "mobile";
 
 function hostOf(url: string | null) {
   if (!url) return "";
@@ -96,46 +94,65 @@ function SearchField({ id, label, value, onChange, placeholder }: { id: string; 
   );
 }
 
+type ShowcasePage = { items: ShowcaseEntry[]; total: number };
+
+function showcaseUrl(q: string, medium: string, gallery: string, offset: number) {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+  if (medium !== "all") params.set("medium", medium);
+  if (gallery) params.set("gallery", gallery);
+  if (offset) params.set("offset", String(offset));
+  return `/showcase.json${params.size ? `?${params}` : ""}`;
+}
+
 function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[]; total: number; galleries: [string, number][] }) {
-  // The page carries the first screenful; the full list (for filtering) loads right after.
+  // Filtering and paging run in the database; the page ships the first 60 unfiltered entries.
   const [entries, setEntries] = useState(initial);
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/showcase.json")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((all: ShowcaseEntry[] | null) => !cancelled && all?.length && setEntries(all))
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [matchTotal, setMatchTotal] = useState(total);
+  const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
   const [medium, setMedium] = useState<"all" | "web" | "3d" | "mobile">("all");
   const [gallery, setGallery] = useState("");
-  const [shown, setShown] = useState(PAGE);
+  const firstRender = useRef(true);
+  const request = useRef(0);
 
-  const ordered = entries;
-  const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const list = ordered.filter((e) => {
-    if (medium === "web" && e.platform !== "web") return false;
-    if (medium === "3d" && e.platform !== "3d") return false;
-    if (medium === "mobile" && !isMobile(e.platform)) return false;
-    if (gallery && !e.featured.some((f) => f.gallery === gallery)) return false;
-    if (words.length) {
-      const hay = [e.name, hostOf(e.url), ...e.tags, ...e.featured.map((f) => f.gallery)].join(" ").toLowerCase();
-      if (!words.every((w) => hay.includes(w))) return false;
+  async function load(offset: number) {
+    const id = ++request.current;
+    setLoading(true);
+    try {
+      const res = await fetch(showcaseUrl(q, medium, gallery, offset));
+      if (!res.ok) throw new Error(String(res.status));
+      const page = (await res.json()) as ShowcasePage;
+      if (id !== request.current) return;
+      setEntries((prev) => (offset ? [...prev, ...page.items] : page.items));
+      setMatchTotal(page.total);
+    } catch {
+      // Keep what's shown; the next change retries.
+    } finally {
+      if (id === request.current) setLoading(false);
     }
-    return true;
-  });
+  }
+
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => load(0), 250);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the filters change
+  }, [q, medium, gallery]);
+
+  const list = entries;
 
   return (
-    <div className="flex flex-col gap-5">
-      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={(v) => { setQ(v); setShown(PAGE); }} placeholder="Search by name, domain, tag or gallery" />
+    <div className="flex flex-col gap-5" aria-busy={loading}>
+      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search by name, domain, tag or gallery" />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented
           label="Medium"
           value={medium}
-          onChange={(v) => { setMedium(v); setShown(PAGE); }}
+          onChange={setMedium}
           options={[
             { value: "all", label: "All" },
             { value: "web", label: "Web" },
@@ -147,7 +164,7 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
           Featured on
           <select
             value={gallery}
-            onChange={(e) => { setGallery(e.target.value); setShown(PAGE); }}
+            onChange={(e) => setGallery(e.target.value)}
             className="min-h-11 rounded-md border bg-card px-2 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9"
           >
             <option value="">All galleries</option>
@@ -160,15 +177,24 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
         </label>
       </div>
       <p aria-live="polite" className="text-sm text-muted-foreground tabular-nums">
-        <b className="font-semibold text-foreground">{list.length}</b> of {Math.max(total, entries.length)} sites and apps
+        {matchTotal === total ? (
+          <>
+            <b className="font-semibold text-foreground">{total.toLocaleString("en-US")}</b> sites and apps
+          </>
+        ) : (
+          <>
+            <b className="font-semibold text-foreground">{matchTotal.toLocaleString("en-US")}</b> of {total.toLocaleString("en-US")} sites and apps
+          </>
+        )}
+        {loading && <span className="ml-2">Updating…</span>}
       </p>
-      {list.length === 0 ? (
+      {list.length === 0 && !loading ? (
         <p className="rounded-xl border border-dashed bg-card p-8 text-center text-muted-foreground">
           Nothing matches. Try a broader word or clear the filters.
         </p>
       ) : (
         <ul className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(16rem,1fr))]">
-          {list.slice(0, shown).map((e) => {
+          {list.map((e) => {
             const href = e.url ?? e.featured[0]?.sourceUrl;
             return (
               <li key={e.id} className="flex min-w-0 flex-col gap-2 rounded-xl border bg-card p-4">
@@ -210,19 +236,20 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
           })}
         </ul>
       )}
-      {list.length > shown && (
+      {list.length < matchTotal && (
         <button
           type="button"
-          onClick={() => setShown((n) => n + PAGE)}
-          className="mx-auto min-h-11 rounded-lg border bg-card px-5 text-sm font-semibold hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+          disabled={loading}
+          onClick={() => load(list.length)}
+          className="mx-auto min-h-11 rounded-lg border bg-card px-5 text-sm font-semibold hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-60"
         >
-          Show more ({list.length - shown} left)
+          {loading ? "Loading…" : `Show more (${(matchTotal - list.length).toLocaleString("en-US")} left)`}
         </button>
       )}
       <p className="max-w-[72ch] border-t pt-4 text-sm text-muted-foreground">
-        Collected from each gallery&apos;s latest picks. Sites featured by more than one gallery are merged, and
-        sponsored placements are left out. Awwwards and Banani don&apos;t list the live address, so those entries open
-        the gallery page instead.
+        Collected from 13 design galleries&apos; listings, refreshed weekly. Sites featured by more than one gallery
+        are merged, and sponsored placements are left out. When a gallery doesn&apos;t show the live address, the
+        entry opens the gallery page instead.
       </p>
     </div>
   );

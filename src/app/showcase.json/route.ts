@@ -1,11 +1,18 @@
-import { interleaveByGallery, listShowcase } from "@/lib/db/showcase";
+import { searchShowcase } from "@/lib/db/showcase";
 import { createPublicClient } from "@/lib/supabase/public";
 
-// The full showcase for the directory's client-side filters. Cached and rebuilt hourly,
-// so the home page HTML only needs to carry the first screenful.
-export const revalidate = 3600;
+const MEDIUMS = new Set(["all", "web", "3d", "mobile"]);
 
-export async function GET() {
-  const entries = interleaveByGallery(await listShowcase(createPublicClient()));
-  return Response.json(entries);
+// One page of the showcase for the directory's search and filters. Responses are cached at
+// the edge per URL for 10 minutes.
+export async function GET(request: Request) {
+  const params = new URL(request.url).searchParams;
+  const medium = params.get("medium") ?? "all";
+  const page = await searchShowcase(createPublicClient(), {
+    q: (params.get("q") ?? "").slice(0, 100),
+    medium: MEDIUMS.has(medium) ? medium : "all",
+    gallery: (params.get("gallery") ?? "").slice(0, 60),
+    offset: Math.min(Math.max(Number(params.get("offset")) || 0, 0), 50_000),
+  });
+  return Response.json(page, { headers: { "cache-control": "public, s-maxage=600, stale-while-revalidate=3600" } });
 }

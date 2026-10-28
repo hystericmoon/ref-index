@@ -286,6 +286,24 @@ export type Database = {
         }
         Relationships: []
       }
+      showcase_refresh_runs: {
+        Row: {
+          id: number
+          ran_at: string
+          report: Json
+        }
+        Insert: {
+          id?: never
+          ran_at?: string
+          report?: Json
+        }
+        Update: {
+          id?: never
+          ran_at?: string
+          report?: Json
+        }
+        Relationships: []
+      }
       sources: {
         Row: {
           active: boolean
@@ -377,6 +395,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_showcase_entries: { Args: { entries: Json }; Returns: Json }
       screen_tag_counts: {
         Args: never
         Returns: {
@@ -403,6 +422,31 @@ export type Database = {
           tag_ids: string[]
           thumb_path: string
           width: number
+        }[]
+      }
+      search_showcase: {
+        Args: {
+          p_gallery?: string
+          p_limit?: number
+          p_medium?: string
+          p_offset?: number
+          p_query?: string
+        }
+        Returns: {
+          featured: Json
+          id: string
+          name: string
+          platform: string
+          tags: string[]
+          total: number
+          url: string
+        }[]
+      }
+      showcase_gallery_counts: {
+        Args: never
+        Returns: {
+          gallery: string
+          items: number
         }[]
       }
     }

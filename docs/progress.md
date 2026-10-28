@@ -165,8 +165,15 @@ made, open issues. Keep entries short; this file is read at the start of every s
 - Not backfilled: Land-book (Cloudflare challenge), SiteInspire (429 on every listing page; the feed
   has no pages). Stopped early: CSS Design Awards at page 186 (CAPTCHA), One Page Love at the
   600-page cap (~6,000 of 9,000+), Apple Design Awards before 2020 (403).
-- Open: `listShowcase` reads every item in one request, so PostgREST's row cap (usually 1,000) and the
-  payload size now matter. Paginate it on the server before relying on the full list.
+- Fixed: showcase search, medium and gallery filters, and paging now run in the database
+  (`search_showcase` and `showcase_gallery_counts`, migration 20261029000200, trigram indexes). The
+  home page ships 60 entries; `/showcase.json?q=&medium=&gallery=&offset=` serves the rest (edge-cached
+  10 min). Checked in the browser: 20,934 total, search, gallery filter, Show more, no errors.
+- `showcase-refresh` Edge Function redeployed with JWT verification on. The weekly schedule still needs
+  turning on in the dashboard (Integrations → Cron → Edge Function `showcase-refresh`, `0 3 * * 1`).
+  The safety check here won't create a recurring job, nor deploy with JWT verification off.
+- Known gap: `add_showcase_entries` matches by name when there's no URL, so a few unrelated sites with
+  the same generic name may share an item.
 
 ## Later
 _(ideas and out-of-scope items noted during sessions)_
