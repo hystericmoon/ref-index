@@ -131,3 +131,45 @@ export async function isEditor(db: DbClient): Promise<boolean> {
   if (error) return false;
   return data === true;
 }
+
+/** Detail captures from scripts/capture-details.ts, as public URLs. */
+export type ShowcaseDetails = {
+  full: string;
+  /** Height of the full-page capture in CSS pixels at 1280 wide. */
+  fullHeight: number;
+  pages: { url: string; title: string; imageUrl: string }[];
+};
+
+export type ShowcaseItem = ShowcaseEntry & { status: string; details: ShowcaseDetails | null };
+
+/** One showcase item for its detail page (/site/[id]), or null when it doesn't exist or is hidden. */
+export async function getShowcaseItem(db: DbClient, id: string): Promise<ShowcaseItem | null> {
+  const [{ data: row, error }, { data: features, error: featuresError }] = await Promise.all([
+    db
+      .from("showcase_items")
+      .select("id, name, url, platform, tags, thumb_path, staff_pick, gallery_count, categories, status, details")
+      .eq("id", id)
+      .maybeSingle(),
+    db.from("showcase_features").select("gallery, source_url").eq("item_id", id).order("first_seen"),
+  ]);
+  if (error) throw error;
+  if (featuresError) throw featuresError;
+  if (!row || row.status === "hidden") return null;
+  const d = row.details as { full: string; fullHeight: number; pages: { path: string; url: string; title: string }[] } | null;
+  return {
+    id: row.id,
+    name: row.name,
+    url: row.url,
+    platform: row.platform,
+    tags: row.tags,
+    thumbUrl: row.thumb_path ? `${THUMBS}/${row.thumb_path}` : null,
+    staffPick: row.staff_pick,
+    galleryCount: row.gallery_count,
+    categories: row.categories,
+    featured: (features ?? []).map((f) => ({ gallery: f.gallery, sourceUrl: f.source_url })),
+    status: row.status,
+    details: d
+      ? { full: `${THUMBS}/${d.full}`, fullHeight: d.fullHeight, pages: d.pages.map((p) => ({ url: p.url, title: p.title, imageUrl: `${THUMBS}/${p.path}` })) }
+      : null,
+  };
+}

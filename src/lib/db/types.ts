@@ -278,6 +278,8 @@ export type Database = {
           categories: string[]
           categories_set_at: string | null
           created_at: string
+          details: Json | null
+          details_checked_at: string | null
           first_seen: string
           gallery_count: number
           id: string
@@ -297,6 +299,8 @@ export type Database = {
           categories?: string[]
           categories_set_at?: string | null
           created_at?: string
+          details?: Json | null
+          details_checked_at?: string | null
           first_seen?: string
           gallery_count?: number
           id?: string
@@ -316,6 +320,8 @@ export type Database = {
           categories?: string[]
           categories_set_at?: string | null
           created_at?: string
+          details?: Json | null
+          details_checked_at?: string | null
           first_seen?: string
           gallery_count?: number
           id?: string

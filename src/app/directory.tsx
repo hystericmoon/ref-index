@@ -127,13 +127,10 @@ function CategoryChips({ value, onChange, counts }: { value: string; onChange: (
 function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; editor: boolean; onHidden: () => void }) {
   const href = e.url ?? e.featured[0]?.sourceUrl;
   const picture = (
-    // The name link below is the accessible link; the picture repeats it for pointer users.
+    // The picture opens the site's detail page; the name below goes straight to the live site.
     <a
-      href={href}
-      target="_blank"
-      rel="noopener"
-      tabIndex={-1}
-      aria-hidden="true"
+      href={`/site/${e.id}`}
+      aria-label={`${e.name}: full page and inner pages`}
       className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted"
     >
       {e.thumbUrl ? (

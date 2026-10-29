@@ -231,3 +231,12 @@ _(ideas and out-of-scope items noted during sessions)_
   Flags never hide anything by themselves.
 - Editors see Feature / Hide / category tools under each homepage card. The public showcase JSON is
   edge-cached 10 minutes, so a hidden site can linger that long for other visitors.
+- Sorting without the API: Haiku helpers in a Claude session sorted 5,357 sites from page text
+  (4,025 got categories; text shared by several names or hosts, and gambling spam, were left out).
+  10,839 of 15,751 live sites are sorted. A second pass from screenshots is scheduled.
+- 101 sites whose domains are parked, erroring, "coming soon", spam or a redirect to another site
+  were flagged and hidden.
+- Detail pages at `/site/[id]`: the card picture opens them; the name still opens the live site.
+  `scripts/capture-details.sh` captures the full home page (up to 8 screens) and up to 3 inner
+  pages at 960px for Top picks only (~1,800), to stay inside the free 1 GB storage. Parked or
+  taken-over domains found while capturing are flagged. Later: captures for every site if storage allows.
