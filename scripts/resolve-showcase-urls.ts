@@ -44,6 +44,9 @@ function extract(html: string, gallery: string): string | null {
     const match = html.match(pattern);
     if (match) return clean(match[1]);
   }
+  // A gallery with its own pattern and no match has no live link (the site is gone). The generic
+  // patterns would pick a "Launch website" link from its related-sites list instead.
+  if (PATTERNS[gallery]) return null;
   for (const pattern of GENERIC) {
     const match = html.match(pattern);
     if (match?.[1]) return clean(match[1]);

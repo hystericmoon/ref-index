@@ -240,3 +240,9 @@ _(ideas and out-of-scope items noted during sessions)_
   `scripts/capture-details.sh` captures the full home page (up to 8 screens) and up to 3 inner
   pages at 960px for Top picks only (~1,800), to stay inside the free 1 GB storage. Parked or
   taken-over domains found while capturing are flagged. Later: captures for every site if storage allows.
+- Fixed wrong addresses: when a One Page Love, Httpster or Minimal Gallery page had no live link
+  (the site is gone), resolve-showcase-urls.ts fell back to a generic "Launch website" match and took
+  the first site from the page's related list. 3,347 entries got a neighbour's address (meetmappy,
+  joshpuckett, angelo.so…); they're reset to no address and sit in the Archive. Galleries with their
+  own pattern no longer use the generic fallback.
+- Screenshot sorting in-session: 92% of live sites with a screenshot now have a category.
