@@ -12,6 +12,8 @@ export type ShowcaseEntry = {
   staffPick: boolean;
   /** How many galleries featured it. */
   galleryCount: number;
+  /** Ids from src/lib/categories.ts. */
+  categories: string[];
   featured: { gallery: string; sourceUrl: string }[];
 };
 
@@ -21,7 +23,7 @@ const THUMBS = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public
 export type ShowcaseView = "top" | "all" | "archive";
 export const SHOWCASE_VIEWS: ShowcaseView[] = ["top", "all", "archive"];
 
-export type ShowcaseQuery = { q?: string; medium?: string; gallery?: string; view?: ShowcaseView; offset?: number; limit?: number };
+export type ShowcaseQuery = { q?: string; medium?: string; gallery?: string; view?: ShowcaseView; category?: string; offset?: number; limit?: number };
 
 /** One page of showcase items matching a search (the `search_showcase` RPC), newest first. */
 export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
@@ -32,6 +34,7 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
     p_offset: query.offset ?? 0,
     p_limit: query.limit ?? 60,
     p_view: query.view ?? "top",
+    p_category: query.category || undefined,
   });
   if (error) throw error;
   return {
@@ -45,11 +48,23 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
         thumbUrl: row.thumb_path ? `${THUMBS}/${row.thumb_path}` : null,
         staffPick: row.staff_pick,
         galleryCount: row.gallery_count,
+        categories: row.categories,
         featured: row.featured as ShowcaseEntry["featured"],
       }),
     ),
     total: Number(data[0]?.total ?? 0),
   };
+}
+
+export type CategoryCounts = Record<string, Record<ShowcaseView, number>>;
+
+/** How many items each category holds in each view, by category id. */
+export async function getCategoryCounts(db: DbClient): Promise<CategoryCounts> {
+  const { data, error } = await db.rpc("showcase_category_counts");
+  if (error) throw error;
+  return Object.fromEntries(
+    data.map((row) => [row.category, { top: Number(row.top), all: Number(row.everything), archive: Number(row.archive) }]),
+  );
 }
 
 /** How many items each gallery has featured, A–Z. */

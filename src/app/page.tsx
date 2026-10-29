@@ -1,6 +1,6 @@
 import { HeroDecor } from "@/components/hero-decor";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/brand";
-import { getViewCounts, listGalleryCounts, searchShowcase } from "@/lib/db/showcase";
+import { getCategoryCounts, getViewCounts, listGalleryCounts, searchShowcase } from "@/lib/db/showcase";
 import { listSources } from "@/lib/db/sources";
 import type { DirectorySource } from "@/lib/directory";
 import { createPublicClient } from "@/lib/supabase/public";
@@ -15,12 +15,13 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const db = createPublicClient();
-  const [params, sources, showcase, galleryCounts, viewCounts] = await Promise.all([
+  const [params, sources, showcase, galleryCounts, viewCounts, categoryCounts] = await Promise.all([
     searchParams,
     listSources(db),
     searchShowcase(db, { limit: FIRST_SCREEN, view: "top" }),
     listGalleryCounts(db),
     getViewCounts(db),
+    getCategoryCounts(db),
   ]);
   const view = params.view === "galleries" ? "galleries" : "showcase";
   const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
@@ -56,6 +57,7 @@ export default async function Home({
         sources={directory}
         showcase={showcase.items}
         viewCounts={viewCounts}
+        categoryCounts={categoryCounts}
         galleryCounts={galleryCounts}
         initialView={view}
         initialQuery={q}

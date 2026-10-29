@@ -211,3 +211,13 @@ _(ideas and out-of-scope items noted during sessions)_
   now leaves such sites unchecked instead of saving the block page.
 - Later: real award dates per gallery (every entry's first_seen is the import day); detail captures of
   each site (full page and sections); recapture network-blocked sites from another network.
+
+## 2026-10-29 · Showcase categories
+- 18 categories beside the medium switch: 6 kinds of site (portfolio, agency & studio, SaaS & product,
+  e-commerce, editorial, events) and 12 fields (AI, finance, crypto, developer tools, health, food, fashion,
+  architecture, travel, music/film/games, education, nonprofit & climate). Ids in `src/lib/categories.ts`.
+- Assigned by keywords: `scripts/site-meta.ts` reads each site's own title, description and headings (plain
+  HTTP, kept locally only), `scripts/categorize-showcase.ts` scores them plus gallery tags and writes SQL.
+  At most 1 kind + 2 fields per site; editor-reviewed sites are never overwritten.
+- Chip counts follow the selected view. Later: let editors fix categories in `/curate`; non-English sites
+  match less often.

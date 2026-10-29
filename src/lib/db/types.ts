@@ -273,6 +273,7 @@ export type Database = {
       }
       showcase_items: {
         Row: {
+          categories: string[]
           created_at: string
           first_seen: string
           gallery_count: number
@@ -288,6 +289,7 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          categories?: string[]
           created_at?: string
           first_seen?: string
           gallery_count?: number
@@ -303,6 +305,7 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          categories?: string[]
           created_at?: string
           first_seen?: string
           gallery_count?: number
@@ -464,6 +467,7 @@ export type Database = {
       }
       search_showcase: {
         Args: {
+          p_category?: string
           p_gallery?: string
           p_limit?: number
           p_medium?: string
@@ -472,6 +476,7 @@ export type Database = {
           p_view?: string
         }
         Returns: {
+          categories: string[]
           featured: Json
           gallery_count: number
           id: string
@@ -482,6 +487,15 @@ export type Database = {
           thumb_path: string
           total: number
           url: string
+        }[]
+      }
+      showcase_category_counts: {
+        Args: never
+        Returns: {
+          archive: number
+          category: string
+          everything: number
+          top: number
         }[]
       }
       showcase_gallery_counts: {

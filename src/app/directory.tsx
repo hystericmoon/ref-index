@@ -4,7 +4,8 @@ import { ExternalLink, Search, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Beam, LiquidSwitch, Orb } from "@/components/effects";
-import type { ShowcaseEntry, ShowcaseView as Curation } from "@/lib/db/showcase";
+import { CATEGORIES } from "@/lib/categories";
+import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation } from "@/lib/db/showcase";
 import { KIND_RANK, MEDIUM_GROUPS, SUGGESTIONS, sourceAction, type DirectorySource } from "@/lib/directory";
 import { cn } from "@/lib/utils";
 
@@ -85,14 +86,40 @@ function SearchField({
 
 type ShowcasePage = { items: ShowcaseEntry[]; total: number };
 
-function showcaseUrl(view: Curation, q: string, medium: string, gallery: string, offset: number) {
+function showcaseUrl(view: Curation, q: string, medium: string, category: string, gallery: string, offset: number) {
   const params = new URLSearchParams();
   if (view !== "top") params.set("view", view);
   if (q.trim()) params.set("q", q.trim());
   if (medium !== "all") params.set("medium", medium);
+  if (category) params.set("category", category);
   if (gallery) params.set("gallery", gallery);
   if (offset) params.set("offset", String(offset));
   return `/showcase.json${params.size ? `?${params}` : ""}`;
+}
+
+/** One row of category chips: what kind of site, then what field. Empty categories are left out. */
+function CategoryChips({ value, onChange, counts }: { value: string; onChange: (id: string) => void; counts: Record<string, number> }) {
+  const chip = (id: string, label: string, n?: number) => (
+    <button
+      key={id || "all"}
+      type="button"
+      aria-pressed={value === id}
+      onClick={() => onChange(value === id ? "" : id)}
+      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground sm:min-h-9"
+    >
+      {label}
+      {n !== undefined && <span className="font-mono text-[11px] opacity-70">{n.toLocaleString("en-US")}</span>}
+    </button>
+  );
+  const shown = CATEGORIES.filter((c) => counts[c.id] || c.id === value);
+  return (
+    <div role="group" aria-label="Category" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+      {chip("", "All categories")}
+      {shown.filter((c) => c.group === "type").map((c) => chip(c.id, c.label, counts[c.id] ?? 0))}
+      <span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-border" />
+      {shown.filter((c) => c.group === "industry").map((c) => chip(c.id, c.label, counts[c.id] ?? 0))}
+    </div>
+  );
 }
 
 function ShowcaseCard({ entry: e }: { entry: ShowcaseEntry }) {
@@ -178,10 +205,12 @@ const CURATION_NOTE: Record<Curation, string> = {
 function ShowcaseView({
   initial,
   counts,
+  categoryCounts,
   galleries,
 }: {
   initial: ShowcaseEntry[];
   counts: Record<Curation, number>;
+  categoryCounts: CategoryCounts;
   galleries: [string, number][];
 }) {
   // Filtering and paging run in the database; the page ships the first 60 top picks.
@@ -192,6 +221,7 @@ function ShowcaseView({
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState("");
   const [medium, setMedium] = useState<"all" | "web" | "3d" | "mobile">("all");
+  const [category, setCategory] = useState("");
   const [gallery, setGallery] = useState("");
   const firstRender = useRef(true);
   const request = useRef(0);
@@ -200,7 +230,7 @@ function ShowcaseView({
     const id = ++request.current;
     setLoading(true);
     try {
-      const res = await fetch(showcaseUrl(curation, q, medium, gallery, offset));
+      const res = await fetch(showcaseUrl(curation, q, medium, category, gallery, offset));
       if (!res.ok) throw new Error(String(res.status));
       const page = (await res.json()) as ShowcasePage;
       if (id !== request.current) return;
@@ -221,7 +251,7 @@ function ShowcaseView({
     const timer = window.setTimeout(() => load(0), 250);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the filters change
-  }, [curation, q, medium, gallery]);
+  }, [curation, q, medium, category, gallery]);
 
   const list = entries;
 
@@ -269,6 +299,11 @@ function ShowcaseView({
           </select>
         </label>
       </div>
+      <CategoryChips
+        value={category}
+        onChange={setCategory}
+        counts={Object.fromEntries(Object.entries(categoryCounts).map(([id, n]) => [id, n[curation]]))}
+      />
       <p aria-live="polite" className="flex min-h-6 flex-wrap items-center gap-x-2 text-sm text-muted-foreground tabular-nums">
         {matchTotal === total ? (
           <span>
@@ -492,6 +527,7 @@ export function Directory({
   sources,
   showcase,
   viewCounts,
+  categoryCounts,
   galleryCounts,
   initialView,
   initialQuery,
@@ -499,6 +535,7 @@ export function Directory({
   sources: DirectorySource[];
   showcase: ShowcaseEntry[];
   viewCounts: Record<Curation, number>;
+  categoryCounts: CategoryCounts;
   galleryCounts: [string, number][];
   initialView: View;
   initialQuery: string;
@@ -546,7 +583,7 @@ export function Directory({
         ))}
       </div>
       <div role="tabpanel" id="panel-showcase" aria-labelledby="tab-showcase" hidden={view !== "showcase"}>
-        <ShowcaseView initial={showcase} counts={viewCounts} galleries={galleryCounts} />
+        <ShowcaseView initial={showcase} counts={viewCounts} categoryCounts={categoryCounts} galleries={galleryCounts} />
       </div>
       <div role="tabpanel" id="panel-galleries" aria-labelledby="tab-galleries" hidden={view !== "galleries"}>
         <GalleriesView sources={sources} q={q} setQ={setQ} />
