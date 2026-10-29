@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Images, User } from "lucide-react";
+import { LogOut, Images, Sparkles, User } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function AccountMenu({ email }: { email: string | null }) {
+export function AccountMenu({ email, editor = false }: { email: string | null; editor?: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -37,6 +37,14 @@ export function AccountMenu({ email }: { email: string | null }) {
             Library
           </Link>
         </DropdownMenuItem>
+        {editor && (
+          <DropdownMenuItem asChild className="min-h-11">
+            <Link href="/curate">
+              <Sparkles aria-hidden="true" />
+              Curate
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem className="min-h-11" onSelect={() => void signOut()}>
           <LogOut aria-hidden="true" />
           Sign out

@@ -71,7 +71,11 @@ const HIDE_BANNERS = `
 // Lapsed domains that now show a parking page, a host's placeholder or spam.
 const PARKED =
   /domain (is|may be) for sale|buy this domain|this domain (has expired|is parked)|parked free|hostinger|godaddy|account (has been )?suspended|website is (almost )?ready|casino|index of \//i;
-const BOT_CHECK =/security verification|just a moment|verify you are human|checking your browser|attention required|access denied|captcha/i;
+// The capturing machine's internet provider shows its own page for sites it blocks. Those
+// sites aren't gone, so they're left unchecked (see showcase-thumbs-sql.ts) for a later run elsewhere.
+const NETWORK_BLOCK = /situs diblokir|internet ?positif|trustpositif|aduankonten/i;
+const BLOCKED_HERE = "blocked on this network";
+const BOT_CHECK = /security verification|just a moment|verify you are human|checking your browser|attention required|access denied|captcha/i;
 
 async function capture(context: BrowserContext, item: Item): Promise<string | null> {
   const page = await context.newPage();
@@ -88,6 +92,7 @@ async function capture(context: BrowserContext, item: Item): Promise<string | nu
     const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
     if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return "bot check page";
     if (PARKED.test(title) || PARKED.test(text)) return "parked or replaced domain";
+    if (NETWORK_BLOCK.test(title) || NETWORK_BLOCK.test(text)) return BLOCKED_HERE;
     const shot = await page.screenshot({ type: "png", timeout: 15_000 });
     const stats = await sharp(shot).stats();
     if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return "blank screen";

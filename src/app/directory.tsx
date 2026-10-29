@@ -1,9 +1,10 @@
 "use client";
 
-import { ExternalLink, Search } from "lucide-react";
+import { ExternalLink, Search, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import type { ShowcaseEntry } from "@/lib/db/showcase";
+import { Beam, LiquidSwitch, Orb } from "@/components/effects";
+import type { ShowcaseEntry, ShowcaseView as Curation } from "@/lib/db/showcase";
 import { KIND_RANK, MEDIUM_GROUPS, SUGGESTIONS, sourceAction, type DirectorySource } from "@/lib/directory";
 import { cn } from "@/lib/utils";
 
@@ -33,40 +34,25 @@ function useUrlState(view: View, q: string) {
   }, [view, q]);
 }
 
-function Segmented<T extends string>({
+function SearchField({
+  id,
   label,
-  options,
   value,
   onChange,
+  placeholder,
+  busy = false,
 }: {
+  id: string;
   label: string;
-  options: { value: T; label: string }[];
-  value: T;
-  onChange: (value: T) => void;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  busy?: boolean;
 }) {
+  const [focused, setFocused] = useState(false);
   return (
-    <div role="group" aria-label={label} className="inline-flex flex-wrap gap-0.5 rounded-lg bg-muted p-1">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-          className={cn(
-            "min-h-11 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9",
-            value === option.value && "bg-background text-foreground shadow-sm",
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function SearchField({ id, label, value, onChange, placeholder }: { id: string; label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-xl border-2 bg-card px-3 focus-within:border-primary">
+    <Beam size="line" colorVariant="ocean" active={focused || busy} strength={0.9}>
+    <div className="flex items-center gap-2 rounded-full border bg-card px-4 shadow-sm transition-colors focus-within:border-ring/60">
       <Search className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
       <label htmlFor={id} className="sr-only">
         {label}
@@ -76,6 +62,8 @@ function SearchField({ id, label, value, onChange, placeholder }: { id: string; 
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
@@ -85,19 +73,21 @@ function SearchField({ id, label, value, onChange, placeholder }: { id: string; 
         <button
           type="button"
           onClick={() => onChange("")}
-          className="min-h-11 rounded-md px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+          className="min-h-11 rounded-full px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           Clear
         </button>
       )}
     </div>
+    </Beam>
   );
 }
 
 type ShowcasePage = { items: ShowcaseEntry[]; total: number };
 
-function showcaseUrl(q: string, medium: string, gallery: string, offset: number) {
+function showcaseUrl(view: Curation, q: string, medium: string, gallery: string, offset: number) {
   const params = new URLSearchParams();
+  if (view !== "top") params.set("view", view);
   if (q.trim()) params.set("q", q.trim());
   if (medium !== "all") params.set("medium", medium);
   if (gallery) params.set("gallery", gallery);
@@ -105,8 +95,98 @@ function showcaseUrl(q: string, medium: string, gallery: string, offset: number)
   return `/showcase.json${params.size ? `?${params}` : ""}`;
 }
 
-function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[]; total: number; galleries: [string, number][] }) {
-  // Filtering and paging run in the database; the page ships the first 60 unfiltered entries.
+function ShowcaseCard({ entry: e }: { entry: ShowcaseEntry }) {
+  const href = e.url ?? e.featured[0]?.sourceUrl;
+  const picture = (
+    // The name link below is the accessible link; the picture repeats it for pointer users.
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener"
+      tabIndex={-1}
+      aria-hidden="true"
+      className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted"
+    >
+      {e.thumbUrl ? (
+        <Image
+          src={e.thumbUrl}
+          alt=""
+          width={640}
+          height={400}
+          unoptimized
+          loading="lazy"
+          className="size-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
+        />
+      ) : (
+        <span className="dot-grid flex size-full items-center justify-center p-6 text-center text-xl font-semibold tracking-tight text-balance break-words text-muted-foreground">
+          {e.name}
+        </span>
+      )}
+    </a>
+  );
+  return (
+    <li className="flex min-w-0 flex-col gap-2.5">
+      {e.staffPick ? (
+        <Beam size="pulse-inner" colorVariant="ocean" strength={0.8}>
+          {picture}
+        </Beam>
+      ) : (
+        picture
+      )}
+      <div className="flex flex-col gap-1 px-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <a href={href} target="_blank" rel="noopener" className="font-semibold tracking-tight break-words hover:underline focus-visible:underline">
+            {e.name}
+            <span className="sr-only"> (opens in new tab)</span>
+          </a>
+          <span className="shrink-0 font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
+            {PLATFORM_LABEL[e.platform] ?? e.platform}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          {e.staffPick && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 font-medium text-accent-foreground">
+              <Sparkles className="size-3" aria-hidden="true" /> Staff pick
+            </span>
+          )}
+          <span className="font-mono">{e.url ? hostOf(e.url) : `Opens ${e.featured[0]?.gallery} page`}</span>
+        </div>
+        <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+          {e.galleryCount > 1 ? `Featured on ${e.galleryCount} galleries:` : "Featured on"}
+          {e.featured.map((f, i) => (
+            <span key={f.gallery} className="flex items-center gap-1.5">
+              {i > 0 && <span aria-hidden="true">·</span>}
+              <a href={f.sourceUrl} target="_blank" rel="noopener" className="py-1 font-medium text-primary hover:underline">
+                {f.gallery}
+                <span className="sr-only"> (opens {e.name} on {f.gallery} in a new tab)</span>
+              </a>
+            </span>
+          ))}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+const CURATION_LABEL: Record<Curation, string> = { top: "Top picks", all: "Everything", archive: "Archive" };
+const CURATION_NOTE: Record<Curation, string> = {
+  top: "Staff picks and sites featured by two or more galleries.",
+  all: "Every live site and app from the 13 galleries.",
+  archive: "Sites that have gone offline, been parked or block visitors. Kept for the record.",
+};
+
+function ShowcaseView({
+  initial,
+  counts,
+  galleries,
+}: {
+  initial: ShowcaseEntry[];
+  counts: Record<Curation, number>;
+  galleries: [string, number][];
+}) {
+  // Filtering and paging run in the database; the page ships the first 60 top picks.
+  const [curation, setCuration] = useState<Curation>("top");
+  const total = counts[curation];
   const [entries, setEntries] = useState(initial);
   const [matchTotal, setMatchTotal] = useState(total);
   const [loading, setLoading] = useState(false);
@@ -120,7 +200,7 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
     const id = ++request.current;
     setLoading(true);
     try {
-      const res = await fetch(showcaseUrl(q, medium, gallery, offset));
+      const res = await fetch(showcaseUrl(curation, q, medium, gallery, offset));
       if (!res.ok) throw new Error(String(res.status));
       const page = (await res.json()) as ShowcasePage;
       if (id !== request.current) return;
@@ -141,15 +221,28 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
     const timer = window.setTimeout(() => load(0), 250);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the filters change
-  }, [q, medium, gallery]);
+  }, [curation, q, medium, gallery]);
 
   const list = entries;
 
   return (
     <div className="flex flex-col gap-5" aria-busy={loading}>
-      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search by name, domain, tag or gallery" />
+      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search by name, domain, tag or gallery" busy={loading} />
+      <LiquidSwitch
+        label="Collection"
+        value={curation}
+        onChange={setCuration}
+        options={(["top", "all", "archive"] as const).map((c) => ({
+          value: c,
+          label: (
+            <>
+              {CURATION_LABEL[c]} <span className="ml-1 hidden font-mono text-xs text-muted-foreground sm:inline">{counts[c].toLocaleString("en-US")}</span>
+            </>
+          ),
+        }))}
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Segmented
+        <LiquidSwitch
           label="Medium"
           value={medium}
           onChange={setMedium}
@@ -165,7 +258,7 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
           <select
             value={gallery}
             onChange={(e) => setGallery(e.target.value)}
-            className="min-h-11 rounded-md border bg-card px-2 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9"
+            className="min-h-11 rounded-full border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9"
           >
             <option value="">All galleries</option>
             {galleries.map(([g, n]) => (
@@ -176,89 +269,32 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
           </select>
         </label>
       </div>
-      <p aria-live="polite" className="text-sm text-muted-foreground tabular-nums">
+      <p aria-live="polite" className="flex min-h-6 flex-wrap items-center gap-x-2 text-sm text-muted-foreground tabular-nums">
         {matchTotal === total ? (
-          <>
-            <b className="font-semibold text-foreground">{total.toLocaleString("en-US")}</b> sites and apps
-          </>
+          <span>
+            <b className="font-semibold text-foreground">{total.toLocaleString("en-US")}</b> sites and apps.
+          </span>
         ) : (
-          <>
-            <b className="font-semibold text-foreground">{matchTotal.toLocaleString("en-US")}</b> of {total.toLocaleString("en-US")} sites and apps
-          </>
+          <span>
+            <b className="font-semibold text-foreground">{matchTotal.toLocaleString("en-US")}</b> of {total.toLocaleString("en-US")} sites and apps.
+          </span>
         )}
-        {loading && <span className="ml-2">Updating…</span>}
+        <span>{CURATION_NOTE[curation]}</span>
+        {loading && (
+          <span className="inline-flex items-center gap-1.5">
+            <Orb label="Updating results" /> Updating…
+          </span>
+        )}
       </p>
       {list.length === 0 && !loading ? (
-        <p className="rounded-xl border border-dashed bg-card p-8 text-center text-muted-foreground">
+        <p className="rounded-2xl border border-dashed bg-card p-8 text-center text-muted-foreground">
           Nothing matches. Try a broader word or clear the filters.
         </p>
       ) : (
-        <ul className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(16rem,1fr))]">
-          {list.map((e) => {
-            const href = e.url ?? e.featured[0]?.sourceUrl;
-            return (
-              <li key={e.id} className="flex min-w-0 flex-col gap-2 overflow-hidden rounded-xl border bg-card p-4">
-                {/* The name link below is the accessible link; the picture repeats it for pointer users. */}
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  className="-mx-4 -mt-4 mb-1 block aspect-[16/10] overflow-hidden border-b bg-muted"
-                >
-                  {e.thumbUrl ? (
-                    <Image
-                      src={e.thumbUrl}
-                      alt=""
-                      width={640}
-                      height={400}
-                      unoptimized
-                      loading="lazy"
-                      className="size-full object-cover object-top transition-transform duration-300 hover:scale-[1.02] motion-reduce:transition-none"
-                    />
-                  ) : (
-                    <span className="flex size-full items-center justify-center p-6 text-center font-display text-xl font-semibold text-balance break-words text-muted-foreground/70">
-                      {e.name}
-                    </span>
-                  )}
-                </a>
-                <div className="flex items-baseline justify-between gap-3">
-                  <a href={href} target="_blank" rel="noopener" className="font-semibold break-words hover:underline focus-visible:underline">
-                    {e.name}
-                    <span className="sr-only"> (opens in new tab)</span>
-                  </a>
-                  <span className="shrink-0 font-mono text-[11px] tracking-wider text-muted-foreground uppercase">
-                    {PLATFORM_LABEL[e.platform] ?? e.platform}
-                  </span>
-                </div>
-                <span className="font-mono text-xs break-all text-muted-foreground">
-                  {e.url ? hostOf(e.url) : `Opens ${e.featured[0]?.gallery} page`}
-                </span>
-                {e.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {e.tags.slice(0, 3).map((t) => (
-                      <span key={t} className="rounded bg-muted px-1.5 py-1 text-[11px] leading-none font-medium text-muted-foreground">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-                  Featured on
-                  {e.featured.map((f, i) => (
-                    <span key={f.gallery} className="flex items-center gap-1.5">
-                      {i > 0 && <span aria-hidden="true">·</span>}
-                      <a href={f.sourceUrl} target="_blank" rel="noopener" className="py-1 font-medium text-primary hover:underline">
-                        {f.gallery}
-                        <span className="sr-only"> (opens {e.name} on {f.gallery} in a new tab)</span>
-                      </a>
-                    </span>
-                  ))}
-                </p>
-              </li>
-            );
-          })}
+        <ul className="grid gap-x-4 gap-y-6 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
+          {list.map((e) => (
+            <ShowcaseCard key={e.id} entry={e} />
+          ))}
         </ul>
       )}
       {list.length < matchTotal && (
@@ -266,15 +302,21 @@ function ShowcaseView({ initial, total, galleries }: { initial: ShowcaseEntry[];
           type="button"
           disabled={loading}
           onClick={() => load(list.length)}
-          className="mx-auto min-h-11 rounded-lg border bg-card px-5 text-sm font-semibold hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-60"
+          className="mx-auto inline-flex min-h-11 items-center gap-2 rounded-full border bg-card px-5 text-sm font-semibold hover:border-ring/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none disabled:opacity-70"
         >
-          {loading ? "Loading…" : `Show more (${(matchTotal - list.length).toLocaleString("en-US")} left)`}
+          {loading ? (
+            <>
+              <Orb label="Loading more" state="working" /> Loading…
+            </>
+          ) : (
+            `Show more (${(matchTotal - list.length).toLocaleString("en-US")} left)`
+          )}
         </button>
       )}
       <p className="max-w-[72ch] border-t pt-4 text-sm text-muted-foreground">
-        Collected from 13 design galleries&apos; listings, refreshed daily. Sites featured by more than one gallery
-        are merged, and sponsored placements are left out. When a gallery doesn&apos;t show the live address, the
-        entry opens the gallery page instead.
+        Collected from 13 design galleries&apos; listings, refreshed daily, then curated: top picks are sites
+        that several galleries agree on plus our own staff picks, and dead or parked sites move to the archive.
+        Screenshots are our own captures of each live site. Sponsored placements are left out.
       </p>
     </div>
   );
@@ -320,7 +362,7 @@ function GalleriesView({ sources, q, setQ }: { sources: DirectorySource[]; q: st
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-        <Segmented
+        <LiquidSwitch
           label="Medium"
           value={medium}
           onChange={setMedium}
@@ -351,16 +393,16 @@ function GalleriesView({ sources, q, setQ }: { sources: DirectorySource[]; q: st
       </p>
 
       {groups.length === 0 ? (
-        <p className="rounded-xl border border-dashed bg-card p-8 text-center text-muted-foreground">
+        <p className="rounded-2xl border border-dashed bg-card p-8 text-center text-muted-foreground">
           No sites match these filters. Turn off &quot;Only sites that take a search term&quot; or pick another medium.
         </p>
       ) : (
         groups.map((group) => (
           <section key={group.id} aria-labelledby={`group-${group.id}`} className="flex flex-col gap-2">
-            <h2 id={`group-${group.id}`} className="flex items-baseline gap-2 font-display text-sm font-semibold tracking-widest text-muted-foreground uppercase">
+            <h2 id={`group-${group.id}`} className="flex items-baseline gap-2 font-mono text-xs font-medium tracking-widest text-muted-foreground uppercase">
               {group.title} <span className="font-mono font-normal tracking-normal">{group.items.length}</span>
             </h2>
-            <ul className="divide-y rounded-xl border bg-card">
+            <ul className="divide-y rounded-2xl border bg-card">
               {group.items.map((source) => {
                 const action = sourceAction(source, term);
                 const path = action.url.replace(/^https?:\/\/(www\.)?/, "");
@@ -374,7 +416,7 @@ function GalleriesView({ sources, q, setQ }: { sources: DirectorySource[]; q: st
                           width={288}
                           height={180}
                           sizes="144px"
-                          className="aspect-[16/10] w-36 rounded-md border object-cover object-top"
+                          className="aspect-[16/10] w-36 rounded-lg border object-cover object-top"
                         />
                       ) : (
                         <span className="block aspect-[16/10] w-36 rounded-md border bg-muted" />
@@ -403,7 +445,7 @@ function GalleriesView({ sources, q, setQ }: { sources: DirectorySource[]; q: st
                         target="_blank"
                         rel="noopener"
                         className={cn(
-                          "inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-md px-3 text-sm font-semibold hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:min-h-9",
+                          "inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:min-h-9",
                           action.kind === "search" && "bg-primary text-primary-foreground",
                           action.kind === "tagpage" && "bg-accent text-accent-foreground",
                           action.kind === "browse" && "bg-muted text-foreground",
@@ -449,14 +491,14 @@ function GalleriesView({ sources, q, setQ }: { sources: DirectorySource[]; q: st
 export function Directory({
   sources,
   showcase,
-  showcaseTotal,
+  viewCounts,
   galleryCounts,
   initialView,
   initialQuery,
 }: {
   sources: DirectorySource[];
   showcase: ShowcaseEntry[];
-  showcaseTotal: number;
+  viewCounts: Record<Curation, number>;
   galleryCounts: [string, number][];
   initialView: View;
   initialQuery: string;
@@ -467,13 +509,13 @@ export function Directory({
   useUrlState(view, view === "galleries" ? q : "");
 
   const TABS: { id: View; label: string; count: number }[] = [
-    { id: "showcase", label: "Showcase", count: showcaseTotal },
+    { id: "showcase", label: "Showcase", count: viewCounts.all },
     { id: "galleries", label: "Search the galleries", count: sources.length },
   ];
 
   return (
     <div className="flex flex-col gap-6">
-      <div role="tablist" aria-label="Views" className="flex gap-1 border-b">
+      <div role="tablist" aria-label="Views" className="flex flex-wrap gap-1">
         {TABS.map((tab, i) => (
           <button
             key={tab.id}
@@ -495,16 +537,16 @@ export function Directory({
               tabs.current[next]?.focus();
             }}
             className={cn(
-              "-mb-px min-h-11 border-b-2 border-transparent px-3 text-[15px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              view === tab.id && "border-primary text-foreground",
+              "min-h-11 rounded-full border border-transparent px-4 text-[15px] font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              view === tab.id && "border-border bg-card text-foreground shadow-sm",
             )}
           >
-            {tab.label} <span className="ml-1 font-mono text-xs font-normal text-muted-foreground">{tab.count}</span>
+            {tab.label} <span className="ml-1 font-mono text-xs font-normal text-muted-foreground">{tab.count.toLocaleString("en-US")}</span>
           </button>
         ))}
       </div>
       <div role="tabpanel" id="panel-showcase" aria-labelledby="tab-showcase" hidden={view !== "showcase"}>
-        <ShowcaseView initial={showcase} total={showcaseTotal} galleries={galleryCounts} />
+        <ShowcaseView initial={showcase} counts={viewCounts} galleries={galleryCounts} />
       </div>
       <div role="tabpanel" id="panel-galleries" aria-labelledby="tab-galleries" hidden={view !== "galleries"}>
         <GalleriesView sources={sources} q={q} setQ={setQ} />

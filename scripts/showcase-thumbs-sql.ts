@@ -13,7 +13,9 @@ if (!dir) throw new Error("Pass the batch folder");
 const results = readFileSync(join(dir, "results.ndjson"), "utf8")
   .split("\n")
   .filter(Boolean)
-  .map((line) => JSON.parse(line) as { id: string; ok: boolean });
+  .map((line) => JSON.parse(line) as { id: string; ok: boolean; reason?: string | null })
+  // Blocked by the capturing machine's network: not a verdict on the site, so left unchecked.
+  .filter((r) => r.reason !== "blocked on this network");
 const ids = (ok: boolean) => results.filter((r) => r.ok === ok).map((r) => `'${r.id.replace(/[^0-9a-f-]/g, "")}'`);
 
 const captured = ids(true);

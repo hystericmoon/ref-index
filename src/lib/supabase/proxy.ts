@@ -4,7 +4,7 @@ import type { Database } from "@/lib/db/types";
 import { supabaseKey, supabaseUrl } from "./env";
 
 /** Paths that need a signed-in user. */
-const PROTECTED = ["/library"];
+const PROTECTED = ["/library", "/curate"];
 
 /**
  * Refreshes the Supabase session cookie on every request and sends signed-out

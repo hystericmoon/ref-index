@@ -55,6 +55,21 @@ export type Database = {
           },
         ]
       }
+      editors: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       facets: {
         Row: {
           created_at: string
@@ -260,9 +275,13 @@ export type Database = {
         Row: {
           created_at: string
           first_seen: string
+          gallery_count: number
           id: string
           name: string
           platform: string
+          reviewed_at: string | null
+          staff_pick: boolean
+          status: string
           tags: string[]
           thumb_checked_at: string | null
           thumb_path: string | null
@@ -271,9 +290,13 @@ export type Database = {
         Insert: {
           created_at?: string
           first_seen?: string
+          gallery_count?: number
           id?: string
           name: string
           platform: string
+          reviewed_at?: string | null
+          staff_pick?: boolean
+          status?: string
           tags?: string[]
           thumb_checked_at?: string | null
           thumb_path?: string | null
@@ -282,9 +305,13 @@ export type Database = {
         Update: {
           created_at?: string
           first_seen?: string
+          gallery_count?: number
           id?: string
           name?: string
           platform?: string
+          reviewed_at?: string | null
+          staff_pick?: boolean
+          status?: string
           tags?: string[]
           thumb_checked_at?: string | null
           thumb_path?: string | null
@@ -402,6 +429,11 @@ export type Database = {
     }
     Functions: {
       add_showcase_entries: { Args: { entries: Json }; Returns: Json }
+      is_editor: { Args: never; Returns: boolean }
+      review_showcase_item: {
+        Args: { p_action: string; p_id: string }
+        Returns: undefined
+      }
       screen_tag_counts: {
         Args: never
         Returns: {
@@ -437,12 +469,15 @@ export type Database = {
           p_medium?: string
           p_offset?: number
           p_query?: string
+          p_view?: string
         }
         Returns: {
           featured: Json
+          gallery_count: number
           id: string
           name: string
           platform: string
+          staff_pick: boolean
           tags: string[]
           thumb_path: string
           total: number
@@ -454,6 +489,26 @@ export type Database = {
         Returns: {
           gallery: string
           items: number
+        }[]
+      }
+      showcase_review_queue: {
+        Args: { p_limit?: number }
+        Returns: {
+          galleries: string[]
+          gallery_count: number
+          id: string
+          name: string
+          platform: string
+          thumb_path: string
+          url: string
+        }[]
+      }
+      showcase_view_counts: {
+        Args: never
+        Returns: {
+          archive: number
+          everything: number
+          top: number
         }[]
       }
     }

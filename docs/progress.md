@@ -195,3 +195,19 @@ _(ideas and out-of-scope items noted during sessions)_
   First batch: 222 of 400 captured (old Awwwards entries; many domains have lapsed).
 - Later: the daily refresh can't capture (no browser in Edge Functions), so new items need a rerun
   of the script; cookie banners that aren't in the hide list still show in some screenshots.
+
+### Rebrand to Openrefs, restyle, curation (2026-10-29)
+- Working name **Openrefs** (`src/lib/brand.ts`; one place to rename). Goal: lots of good website
+  references for designers, free, no paywall. `.com` names were all taken; `openrefs.design` looked free.
+- Restyle after libraries.dev: neutral charcoal and paper greys, one electric-blue accent, Geist and
+  Geist Mono, pill shapes, dark by default, dotted measurement frames behind the hero (wide screens only).
+- Effects from libraries.dev's MIT packages: `border-beam` (search box while focused or loading, staff
+  pick cards, hero tile), `thinking-orbs` (loading states), `liquid-gooey` (switches: the selection is a
+  liquid drop that slides). Beam renders after hydration because the theme is only known in the browser.
+- Curation (migration 0500): Top picks (staff picks plus sites featured by 2+ galleries, the default),
+  Everything, Archive (screenshot failed: dead, parked or blocking). Editors (`public.editors`, seeded
+  with the one account) review at `/curate`: Feature, Keep or Hide, keys F/K/H, Z to undo.
+- 13 screenshots were the capturing network's ISP block page ("Situs diblokir"); cleared, and the capture
+  now leaves such sites unchecked instead of saving the block page.
+- Later: real award dates per gallery (every entry's first_seen is the import day); detail captures of
+  each site (full page and sections); recapture network-blocked sites from another network.
