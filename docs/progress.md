@@ -221,3 +221,8 @@ _(ideas and out-of-scope items noted during sessions)_
   At most 1 kind + 2 fields per site; editor-reviewed sites are never overwritten.
 - Chip counts follow the selected view. Later: let editors fix categories in `/curate`; non-English sites
   match less often.
+- Editors set categories in `/curate` (Edit under each card; saves on each tap). Hand-set categories are
+  marked `categories_set_at` and no script overwrites them.
+- `scripts/ai-categorize.ts`: sorts the ~10,500 sites the keywords missed with Claude (screenshot + page
+  text) through the Batches API; `submit`, then `collect` writes SQL. Needs `ANTHROPIC_API_KEY` in
+  `.env.local` (added by the owner, never read by the assistant). Not run yet.

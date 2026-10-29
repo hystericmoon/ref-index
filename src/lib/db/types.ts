@@ -274,6 +274,7 @@ export type Database = {
       showcase_items: {
         Row: {
           categories: string[]
+          categories_set_at: string | null
           created_at: string
           first_seen: string
           gallery_count: number
@@ -290,6 +291,7 @@ export type Database = {
         }
         Insert: {
           categories?: string[]
+          categories_set_at?: string | null
           created_at?: string
           first_seen?: string
           gallery_count?: number
@@ -306,6 +308,7 @@ export type Database = {
         }
         Update: {
           categories?: string[]
+          categories_set_at?: string | null
           created_at?: string
           first_seen?: string
           gallery_count?: number
@@ -489,6 +492,10 @@ export type Database = {
           url: string
         }[]
       }
+      set_showcase_categories: {
+        Args: { p_categories: string[]; p_id: string }
+        Returns: undefined
+      }
       showcase_category_counts: {
         Args: never
         Returns: {
@@ -508,6 +515,7 @@ export type Database = {
       showcase_review_queue: {
         Args: { p_limit?: number }
         Returns: {
+          categories: string[]
           galleries: string[]
           gallery_count: number
           id: string

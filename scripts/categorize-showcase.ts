@@ -5,7 +5,7 @@
 //
 // Run: node scripts/categorize-showcase.ts > tmp/site-meta/categories.sql (needs .env.local)
 // Then: supabase db query --linked -f tmp/site-meta/categories.sql
-// Sites already reviewed by an editor are left alone, so corrections aren't overwritten.
+// Items an editor categorized by hand (categories_set_at) are left alone.
 
 import { readFileSync } from "node:fs";
 import { CATEGORIES } from "../src/lib/categories.ts";
@@ -95,6 +95,6 @@ console.error(`${rows.length} items, ${items.filter((i) => metas.get(i.id)?.titl
 
 for (let i = 0; i < rows.length; i += 2000) {
   console.log(
-    `update public.showcase_items s set categories = v.c from (values ${rows.slice(i, i + 2000).join(",\n")}) v(id, c) where s.id = v.id and s.reviewed_at is null;`,
+    `update public.showcase_items s set categories = v.c from (values ${rows.slice(i, i + 2000).join(",\n")}) v(id, c) where s.id = v.id and s.categories_set_at is null;`,
   );
 }

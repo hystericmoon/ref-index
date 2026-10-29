@@ -83,7 +83,7 @@ export async function getViewCounts(db: DbClient): Promise<Record<ShowcaseView, 
   return { top: Number(row?.top ?? 0), all: Number(row?.everything ?? 0), archive: Number(row?.archive ?? 0) };
 }
 
-export type ReviewItem = { id: string; name: string; url: string | null; platform: string; thumbUrl: string | null; galleryCount: number; galleries: string[] };
+export type ReviewItem = { id: string; name: string; url: string | null; platform: string; thumbUrl: string | null; galleryCount: number; galleries: string[]; categories: string[] };
 
 /** The editor's queue: unreviewed entries with a screenshot, most-featured first. */
 export async function getReviewQueue(db: DbClient, limit = 24): Promise<ReviewItem[]> {
@@ -97,6 +97,7 @@ export async function getReviewQueue(db: DbClient, limit = 24): Promise<ReviewIt
     thumbUrl: row.thumb_path ? `${THUMBS}/${row.thumb_path}` : null,
     galleryCount: row.gallery_count,
     galleries: row.galleries,
+    categories: row.categories,
   }));
 }
 
@@ -105,6 +106,12 @@ export type ReviewAction = "keep" | "feature" | "hide";
 /** Records an editor's decision. The database refuses anyone who isn't an editor. */
 export async function reviewItem(db: DbClient, id: string, action: ReviewAction) {
   const { error } = await db.rpc("review_showcase_item", { p_id: id, p_action: action });
+  if (error) throw error;
+}
+
+/** Sets an item's categories by hand; the sorting scripts leave it alone afterwards. */
+export async function setCategories(db: DbClient, id: string, categories: string[]) {
+  const { error } = await db.rpc("set_showcase_categories", { p_id: id, p_categories: categories });
   if (error) throw error;
 }
 
