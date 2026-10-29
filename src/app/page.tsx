@@ -2,7 +2,6 @@ import { HeroDecor } from "@/components/hero-decor";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/brand";
 import { getCategoryCounts, getViewCounts, listGalleryCounts, searchShowcase } from "@/lib/db/showcase";
 import { listSources } from "@/lib/db/sources";
-import type { DirectorySource } from "@/lib/directory";
 import { createPublicClient } from "@/lib/supabase/public";
 import { Directory } from "./directory";
 
@@ -23,24 +22,13 @@ export default async function Home({
     getViewCounts(db),
     getCategoryCounts(db),
   ]);
-  const view = params.view === "galleries" ? "galleries" : "showcase";
   const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
-
-  const directory: DirectorySource[] = sources.map((s) => ({
-    id: s.id,
-    name: s.name,
-    homeUrl: s.home_url,
-    mediums: s.mediums,
-    kind: s.kind as DirectorySource["kind"],
-    urlTemplate: s.url_template,
-    confirmed: s.confirmed,
-    pricing: s.pricing,
-    description: s.description,
-    thumbUrl: s.thumb_path,
-  }));
+  // The galleries the showcase is collected from, credited and linked at the foot of the page.
+  const featured = new Set(galleryCounts.map(([g]) => g));
+  const galleries = sources.filter((s) => featured.has(s.name)).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-4 pb-24 sm:px-6">
+    <main className="mx-auto flex w-full max-w-[100rem] flex-1 flex-col gap-10 px-4 pb-24 sm:px-6 lg:px-10">
       <header className="relative isolate flex flex-col items-center gap-5 py-14 text-center sm:py-20">
         <HeroDecor />
         <p className="rounded-full border bg-card/80 px-3 py-1 font-mono text-xs text-muted-foreground backdrop-blur">
@@ -54,14 +42,25 @@ export default async function Home({
         </p>
       </header>
       <Directory
-        sources={directory}
         showcase={showcase.items}
         viewCounts={viewCounts}
         categoryCounts={categoryCounts}
         galleryCounts={galleryCounts}
-        initialView={view}
         initialQuery={q}
       />
+      <footer className="flex flex-col gap-2 border-t pt-4 text-sm text-muted-foreground">
+        <h2 className="font-medium text-foreground">The galleries</h2>
+        <ul className="flex flex-wrap gap-x-4 gap-y-1">
+          {galleries.map((g) => (
+            <li key={g.id}>
+              <a href={g.home_url} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center hover:text-foreground hover:underline sm:min-h-0">
+                {g.name}
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </footer>
     </main>
   );
 }

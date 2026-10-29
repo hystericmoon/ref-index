@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Search, Sparkles } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { amEditor } from "@/app/curate/actions";
@@ -8,10 +8,6 @@ import { EditorTools } from "@/app/curate/editor-tools";
 import { Beam, LiquidSwitch, Orb } from "@/components/effects";
 import { CATEGORIES } from "@/lib/categories";
 import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation } from "@/lib/db/showcase";
-import { KIND_RANK, MEDIUM_GROUPS, SUGGESTIONS, sourceAction, type DirectorySource } from "@/lib/directory";
-import { cn } from "@/lib/utils";
-
-type View = "showcase" | "galleries";
 
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
 
@@ -24,17 +20,16 @@ function hostOf(url: string | null) {
   }
 }
 
-/** Keep the view and search term in the URL so a link reproduces what you see. */
-function useUrlState(view: View, q: string) {
+/** Keep the search term in the URL so a link reproduces what you see. */
+function useUrlState(q: string) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (view === "galleries") params.set("view", "galleries");
-    else params.delete("view");
+    params.delete("view");
     if (q.trim()) params.set("q", q.trim());
     else params.delete("q");
     const search = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
-  }, [view, q]);
+  }, [q]);
 }
 
 function SearchField({
@@ -88,11 +83,10 @@ function SearchField({
 
 type ShowcasePage = { items: ShowcaseEntry[]; total: number };
 
-function showcaseUrl(view: Curation, q: string, medium: string, category: string, gallery: string, offset: number) {
+function showcaseUrl(view: Curation, q: string, category: string, gallery: string, offset: number) {
   const params = new URLSearchParams();
   if (view !== "top") params.set("view", view);
   if (q.trim()) params.set("q", q.trim());
-  if (medium !== "all") params.set("medium", medium);
   if (category) params.set("category", category);
   if (gallery) params.set("gallery", gallery);
   if (offset) params.set("offset", String(offset));
@@ -207,11 +201,13 @@ function ShowcaseView({
   counts,
   categoryCounts,
   galleries,
+  initialQuery,
 }: {
   initial: ShowcaseEntry[];
   counts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
   galleries: [string, number][];
+  initialQuery: string;
 }) {
   // Filtering and paging run in the database; the page ships the first 60 top picks.
   const [curation, setCuration] = useState<Curation>("top");
@@ -219,8 +215,8 @@ function ShowcaseView({
   const [entries, setEntries] = useState(initial);
   const [matchTotal, setMatchTotal] = useState(total);
   const [loading, setLoading] = useState(false);
-  const [q, setQ] = useState("");
-  const [medium, setMedium] = useState<"all" | "web" | "3d" | "mobile">("all");
+  const [q, setQ] = useState(initialQuery);
+  useUrlState(q);
   const [category, setCategory] = useState("");
   const [gallery, setGallery] = useState("");
   const firstRender = useRef(true);
@@ -235,7 +231,7 @@ function ShowcaseView({
     const id = ++request.current;
     setLoading(true);
     try {
-      const res = await fetch(showcaseUrl(curation, q, medium, category, gallery, offset));
+      const res = await fetch(showcaseUrl(curation, q, category, gallery, offset));
       if (!res.ok) throw new Error(String(res.status));
       const page = (await res.json()) as ShowcasePage;
       if (id !== request.current) return;
@@ -251,12 +247,12 @@ function ShowcaseView({
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
-      return;
+      if (!q.trim()) return;
     }
     const timer = window.setTimeout(() => load(0), 250);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the filters change
-  }, [curation, q, medium, category, gallery]);
+  }, [curation, q, category, gallery]);
 
   const list = entries;
 
@@ -277,17 +273,6 @@ function ShowcaseView({
         }))}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <LiquidSwitch
-          label="Medium"
-          value={medium}
-          onChange={setMedium}
-          options={[
-            { value: "all", label: "All" },
-            { value: "web", label: "Web" },
-            { value: "3d", label: "3D & WebGL" },
-            { value: "mobile", label: "Mobile apps" },
-          ]}
-        />
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Featured on
           <select
@@ -370,237 +355,18 @@ function ShowcaseView({
   );
 }
 
-function GalleriesView({ sources, q, setQ }: { sources: DirectorySource[]; q: string; setQ: (v: string) => void }) {
-  const [medium, setMedium] = useState<"all" | "web" | "mobile" | "motion">("all");
-  const [onlySearch, setOnlySearch] = useState(false);
-  const term = q.trim();
-
-  const groups = MEDIUM_GROUPS.map((group) => {
-    const items = sources.filter(
-      (s) =>
-        (s.mediums[0] ?? "web") === group.id &&
-        (medium === "all" || s.mediums.includes(medium)) &&
-        !(onlySearch && s.kind === "none"),
-    );
-    if (term) items.sort((a, b) => KIND_RANK[a.kind] - KIND_RANK[b.kind]);
-    return { ...group, items };
-  }).filter((g) => g.items.length > 0);
-
-  const shown = groups.flatMap((g) => g.items);
-  const count = (kind: DirectorySource["kind"]) => shown.filter((s) => s.kind === kind).length;
-
-  return (
-    <div className="flex flex-col gap-5">
-      <div role="search" className="flex flex-col gap-3">
-        <SearchField id="galleries-q" label="Pattern or screen" value={q} onChange={setQ} placeholder="e.g. onboarding, pricing, empty state" />
-        <div className="flex flex-wrap items-center gap-2" aria-label="Common patterns" role="group">
-          <span className="text-xs tracking-widest text-muted-foreground uppercase">Try</span>
-          {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={term.toLowerCase() === s}
-              onClick={() => setQ(s)}
-              className="min-h-11 rounded-full border bg-card px-3 text-sm font-medium hover:border-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground sm:min-h-8"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-        <LiquidSwitch
-          label="Medium"
-          value={medium}
-          onChange={setMedium}
-          options={[
-            { value: "all", label: "All" },
-            { value: "web", label: "Web" },
-            { value: "mobile", label: "Mobile apps" },
-            { value: "motion", label: "3D & motion" },
-          ]}
-        />
-        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-          <input type="checkbox" checked={onlySearch} onChange={(e) => setOnlySearch(e.target.checked)} className="size-4 accent-primary" />
-          Only sites that take a search term
-        </label>
-      </div>
-
-      <p aria-live="polite" className="text-sm text-muted-foreground tabular-nums">
-        {term ? (
-          <>
-            <b className="font-semibold text-foreground">{shown.length} sites</b> for “{term}”: {count("query")} search directly,{" "}
-            {count("tag")} by tag page, {count("none")} browse only.
-          </>
-        ) : (
-          <>
-            <b className="font-semibold text-foreground">{shown.length} sites.</b> Type a pattern to get direct links.
-          </>
-        )}
-      </p>
-
-      {groups.length === 0 ? (
-        <p className="rounded-2xl border border-dashed bg-card p-8 text-center text-muted-foreground">
-          No sites match these filters. Turn off &quot;Only sites that take a search term&quot; or pick another medium.
-        </p>
-      ) : (
-        groups.map((group) => (
-          <section key={group.id} aria-labelledby={`group-${group.id}`} className="flex flex-col gap-2">
-            <h2 id={`group-${group.id}`} className="flex items-baseline gap-2 font-mono text-xs font-medium tracking-widest text-muted-foreground uppercase">
-              {group.title} <span className="font-mono font-normal tracking-normal">{group.items.length}</span>
-            </h2>
-            <ul className="divide-y rounded-2xl border bg-card">
-              {group.items.map((source) => {
-                const action = sourceAction(source, term);
-                const path = action.url.replace(/^https?:\/\/(www\.)?/, "");
-                return (
-                  <li key={source.id} className="grid gap-3 p-4 md:grid-cols-[9rem_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1.2fr)] md:gap-5">
-                    <a href={source.homeUrl} target="_blank" rel="noopener" tabIndex={-1} aria-hidden="true" className="hidden md:block">
-                      {source.thumbUrl ? (
-                        <Image
-                          src={source.thumbUrl}
-                          alt=""
-                          width={288}
-                          height={180}
-                          sizes="144px"
-                          className="aspect-[16/10] w-36 rounded-lg border object-cover object-top"
-                        />
-                      ) : (
-                        <span className="block aspect-[16/10] w-36 rounded-md border bg-muted" />
-                      )}
-                    </a>
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                      <a href={source.homeUrl} target="_blank" rel="noopener" className="font-semibold hover:underline">
-                        {source.name}
-                        <span className="sr-only"> (opens in new tab)</span>
-                      </a>
-                      <div className="flex flex-wrap gap-1">
-                        {source.mediums.map((m) => (
-                          <span key={m} className="rounded bg-muted px-1.5 py-1 text-[11px] leading-none font-medium text-muted-foreground">
-                            {m === "motion" ? "3D & motion" : m === "mobile" ? "Mobile" : "Web"}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="min-w-0 text-sm">
-                      {source.description}
-                      {source.pricing && <span className="mt-0.5 block text-muted-foreground">{source.pricing}</span>}
-                    </p>
-                    <div className="flex min-w-0 flex-col items-start gap-1.5">
-                      <a
-                        href={action.url}
-                        target="_blank"
-                        rel="noopener"
-                        className={cn(
-                          "inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:min-h-9",
-                          action.kind === "search" && "bg-primary text-primary-foreground",
-                          action.kind === "tagpage" && "bg-accent text-accent-foreground",
-                          action.kind === "browse" && "bg-muted text-foreground",
-                        )}
-                      >
-                        <span className="truncate">
-                          {action.label}
-                          {term && action.kind !== "browse" && ` “${term}”`}
-                        </span>
-                        <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
-                        <span className="sr-only"> on {source.name} (opens in new tab)</span>
-                      </a>
-                      <span className="font-mono text-xs break-all text-muted-foreground">{path}</span>
-                      {term && action.kind !== "browse" && !source.confirmed && (
-                        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                          Unconfirmed link
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
-      )}
-
-      <footer className="flex max-w-[72ch] flex-col gap-2 border-t pt-4 text-sm text-muted-foreground">
-        <p>
-          <b className="font-medium text-foreground">Search</b> runs the site&apos;s own search.{" "}
-          <b className="font-medium text-foreground">Tag page</b> opens a category page; unusual terms may 404.{" "}
-          <b className="font-medium text-foreground">Browse</b> has no URL search and opens the gallery.
-        </p>
-        <p>
-          &quot;Unconfirmed&quot; marks links whose pattern is widely used but couldn&apos;t be fetched to confirm, because the
-          site blocks automated checks.
-        </p>
-      </footer>
-    </div>
-  );
-}
-
 export function Directory({
-  sources,
   showcase,
   viewCounts,
   categoryCounts,
   galleryCounts,
-  initialView,
   initialQuery,
 }: {
-  sources: DirectorySource[];
   showcase: ShowcaseEntry[];
   viewCounts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
   galleryCounts: [string, number][];
-  initialView: View;
   initialQuery: string;
 }) {
-  const [view, setView] = useState<View>(initialView);
-  const [q, setQ] = useState(initialQuery);
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  useUrlState(view, view === "galleries" ? q : "");
-
-  const TABS: { id: View; label: string; count: number }[] = [
-    { id: "showcase", label: "Showcase", count: viewCounts.all },
-    { id: "galleries", label: "Search the galleries", count: sources.length },
-  ];
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div role="tablist" aria-label="Views" className="flex flex-wrap gap-1">
-        {TABS.map((tab, i) => (
-          <button
-            key={tab.id}
-            ref={(el) => {
-              tabs.current[i] = el;
-            }}
-            type="button"
-            role="tab"
-            id={`tab-${tab.id}`}
-            aria-controls={`panel-${tab.id}`}
-            aria-selected={view === tab.id}
-            tabIndex={view === tab.id ? 0 : -1}
-            onClick={() => setView(tab.id)}
-            onKeyDown={(e) => {
-              if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-              e.preventDefault();
-              const next = (i + (e.key === "ArrowRight" ? 1 : TABS.length - 1)) % TABS.length;
-              setView(TABS[next].id);
-              tabs.current[next]?.focus();
-            }}
-            className={cn(
-              "min-h-11 rounded-full border border-transparent px-4 text-[15px] font-semibold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              view === tab.id && "border-border bg-card text-foreground shadow-sm",
-            )}
-          >
-            {tab.label} <span className="ml-1 font-mono text-xs font-normal text-muted-foreground">{tab.count.toLocaleString("en-US")}</span>
-          </button>
-        ))}
-      </div>
-      <div role="tabpanel" id="panel-showcase" aria-labelledby="tab-showcase" hidden={view !== "showcase"}>
-        <ShowcaseView initial={showcase} counts={viewCounts} categoryCounts={categoryCounts} galleries={galleryCounts} />
-      </div>
-      <div role="tabpanel" id="panel-galleries" aria-labelledby="tab-galleries" hidden={view !== "galleries"}>
-        <GalleriesView sources={sources} q={q} setQ={setQ} />
-      </div>
-    </div>
-  );
+  return <ShowcaseView initial={showcase} counts={viewCounts} categoryCounts={categoryCounts} galleries={galleryCounts} initialQuery={initialQuery} />;
 }

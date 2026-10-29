@@ -12,7 +12,7 @@ export async function SiteHeader() {
   const editor = user ? await isEditor(await createClient()) : false;
 
   return (
-    <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-4 sm:px-6">
+    <header className="mx-auto flex w-full max-w-[100rem] items-center justify-between gap-2 px-4 py-4 sm:px-6 lg:px-10">
       <Link
         href="/"
         className="flex min-h-11 items-center gap-2 rounded-full text-[17px] font-semibold tracking-tight"

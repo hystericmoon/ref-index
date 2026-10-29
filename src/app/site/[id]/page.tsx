@@ -41,7 +41,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
   const d = item.details;
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto flex w-full max-w-[100rem] flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12 lg:px-10">
       <Link href="/" className="inline-flex min-h-11 w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
         <ArrowLeft className="size-4" aria-hidden="true" /> All sites
       </Link>
@@ -119,7 +119,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           {d ? "Full home page" : "Home page"}
         </h2>
         {d ? (
-          <div className="overflow-hidden rounded-2xl border bg-muted">
+          <div className="w-full max-w-5xl overflow-hidden rounded-2xl border bg-muted">
             <Image
               src={d.full}
               alt={`The full home page of ${item.name}, captured from the live site.`}
@@ -131,7 +131,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
           </div>
         ) : item.thumbUrl ? (
           <>
-            <div className="overflow-hidden rounded-2xl border bg-muted">
+            <div className="w-full max-w-5xl overflow-hidden rounded-2xl border bg-muted">
               <Image src={item.thumbUrl} alt={`The top of ${item.name}'s home page.`} width={640} height={400} unoptimized className="h-auto w-full" />
             </div>
             <p className="text-sm text-muted-foreground">Full-page and inner-page captures are made for Top picks.</p>
