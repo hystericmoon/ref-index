@@ -23,7 +23,7 @@ const GENERIC = [
   /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*(?:title|aria-label)="(?:Visit|Launch) (?:the )?(?:[^"]* )?(?:site|website)"/i,
   />\s*(?:Visit|Launch) (?:site|website)\s*</i,
 ];
-const GAP_MS = 1500;
+const GAP_MS = Number(process.env.GAP_MS ?? 1500);
 const UA = "Mozilla/5.0 (compatible; RefIndexBot/1.0; +https://ref-index.vercel.app)";
 
 function clean(raw: string): string | null {

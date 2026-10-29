@@ -115,7 +115,13 @@ await Promise.all(
   Array.from({ length: workers }, async () => {
     while (next < items.length) {
       const item = items[next++];
-      const failure = await capture(context, item);
+      // A page that never settles (a hung renderer, an endless dialog) mustn't stall the run.
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const failure = await Promise.race([
+        capture(context, item),
+        new Promise<string>((resolve) => (timer = setTimeout(() => resolve("gave up after 90 s"), 90_000))),
+      ]);
+      clearTimeout(timer);
       appendFileSync(join(out, "results.ndjson"), JSON.stringify({ id: item.id, ok: !failure, reason: failure }) + "\n");
       done++;
       if (done % 25 === 0 || done === items.length) console.error(`${done}/${items.length}`);

@@ -8,13 +8,15 @@ n=$(find tmp/showcase-thumbs -maxdepth 1 -name "batch-*" -type d 2>/dev/null | w
 while true; do
   n=$((n + 1))
   dir="tmp/showcase-thumbs/batch-$n"
-  node scripts/capture-showcase.ts --out "$dir" --limit 400 --workers 10
+  # Backstop: a wedged browser ends the batch after 30 minutes; finished items are already recorded.
+  timeout 1800 node scripts/capture-showcase.ts --out "$dir" --limit 400 --workers 12 || true
   [ -s "$dir/results.ndjson" ] || { rm -rf "$dir"; echo "All items tried."; break; }
+  # A failed publish is logged, not fatal: rerun the two commands for that batch later.
   if ls "$dir"/img/*.webp >/dev/null 2>&1; then
     $supabase storage cp -r "$dir/img" ss:///showcase --linked --experimental -j 8 \
-      --cache-control "public, max-age=31536000, immutable" >/dev/null
+      --cache-control "public, max-age=31536000, immutable" >/dev/null || echo "batch $n: upload failed"
   fi
   node scripts/showcase-thumbs-sql.ts "$dir" > "$dir.sql"
-  $supabase db query --linked -f "$dir.sql" >/dev/null
-  echo "batch $n: $(grep -c '"ok":true' "$dir/results.ndjson") captured of $(wc -l < "$dir/results.ndjson")"
+  $supabase db query --linked -f "$dir.sql" >/dev/null || echo "batch $n: recording failed"
+  echo "batch $n: $(grep -c '"ok":true' "$dir/results.ndjson") captured of $(wc -l < "$dir/results.ndjson") ($(date +%H:%M))"
 done
