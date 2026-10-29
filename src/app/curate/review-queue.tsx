@@ -1,78 +1,20 @@
 "use client";
 
-import { EyeOff, Check, Pencil, Sparkles, Undo2 } from "lucide-react";
+import { AlertTriangle, EyeOff, Check, Sparkles, Undo2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Orb } from "@/components/effects";
-import { CATEGORIES } from "@/lib/categories";
-import type { ReviewAction, ReviewItem } from "@/lib/db/showcase";
+import type { ReviewAction, ReviewItem, ReviewQueueName } from "@/lib/db/showcase";
 import { cn } from "@/lib/utils";
-import { categoriesAction, moreToReview, reviewAction } from "./actions";
+import { moreToReview, reviewAction } from "./actions";
+import { CategoryEditor } from "./category-editor";
 
 const LABEL: Record<ReviewAction, string> = { feature: "Featured", keep: "Kept", hide: "Hidden" };
 
-const LABELS = new Map(CATEGORIES.map((c) => [c.id, c.label]));
+const FLAG_LABEL: Record<string, string> = { broken: "Looks broken", low_quality: "Looks low quality" };
 
-/** An item's categories, with a toggle list to change them. Each change saves right away. */
-function CategoryEditor({ item }: { item: ReviewItem }) {
-  const [value, setValue] = useState(item.categories);
-  const [open, setOpen] = useState(false);
-
-  function toggle(id: string) {
-    const before = value;
-    const next = value.includes(id) ? value.filter((c) => c !== id) : [...value, id].slice(-6);
-    setValue(next);
-    void categoriesAction(item.id, next).then((res) => {
-      if (!res.ok) {
-        toast.error(`Couldn't save categories for ${item.name}.`);
-        setValue(before);
-      }
-    });
-  }
-
-  return (
-    <div className="flex flex-col gap-1.5 px-1">
-      <div className="flex flex-wrap items-center gap-1 text-xs">
-        {value.length ? (
-          value.map((c) => (
-            <span key={c} className="rounded-full bg-muted px-2 py-0.5 font-medium">
-              {LABELS.get(c) ?? c}
-            </span>
-          ))
-        ) : (
-          <span className="text-muted-foreground">No category</span>
-        )}
-        <button
-          type="button"
-          aria-expanded={open}
-          onClick={() => setOpen((o) => !o)}
-          className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 font-medium text-primary hover:underline sm:min-h-7"
-        >
-          <Pencil className="size-3" aria-hidden="true" /> {open ? "Done" : "Edit"}
-          <span className="sr-only"> categories for {item.name}</span>
-        </button>
-      </div>
-      {open && (
-        <div role="group" aria-label={`Categories for ${item.name}`} className="flex flex-wrap gap-1">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              aria-pressed={value.includes(c.id)}
-              onClick={() => toggle(c.id)}
-              className="min-h-11 rounded-full border bg-card px-2.5 text-xs font-medium text-muted-foreground aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground sm:min-h-7"
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function ReviewQueue({ initial }: { initial: ReviewItem[] }) {
+export function ReviewQueue({ initial, queue }: { initial: ReviewItem[]; queue: ReviewQueueName }) {
   const [items, setItems] = useState(initial);
   const [done, setDone] = useState<{ item: ReviewItem; action: ReviewAction }[]>([]);
   const [loading, startLoading] = useTransition();
@@ -101,10 +43,10 @@ export function ReviewQueue({ initial }: { initial: ReviewItem[] }) {
   useEffect(() => {
     if (items.length > 6 || loading) return;
     startLoading(async () => {
-      const more = await moreToReview([...items, ...done.map((d) => d.item)].map((i) => i.id));
+      const more = await moreToReview([...items, ...done.map((d) => d.item)].map((i) => i.id), queue);
       setItems((list) => [...list, ...more.filter((m) => !list.some((i) => i.id === m.id))]);
     });
-  }, [items, done, loading]);
+  }, [items, done, loading, queue]);
 
   // F / K / H act on the first card, Z undoes.
   useEffect(() => {
@@ -162,6 +104,11 @@ export function ReviewQueue({ initial }: { initial: ReviewItem[] }) {
               </a>
               <div className="flex flex-col gap-0.5 px-1">
                 <span className="font-semibold tracking-tight">{item.name}</span>
+                {item.aiFlag && (
+                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
+                    <AlertTriangle className="size-3" aria-hidden="true" /> AI: {FLAG_LABEL[item.aiFlag] ?? item.aiFlag}
+                  </span>
+                )}
                 <span className="text-xs text-muted-foreground">
                   {item.galleryCount > 1 ? `${item.galleryCount} galleries: ` : ""}
                   {item.galleries.join(" · ")}

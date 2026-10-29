@@ -83,11 +83,14 @@ export async function getViewCounts(db: DbClient): Promise<Record<ShowcaseView, 
   return { top: Number(row?.top ?? 0), all: Number(row?.everything ?? 0), archive: Number(row?.archive ?? 0) };
 }
 
-export type ReviewItem = { id: string; name: string; url: string | null; platform: string; thumbUrl: string | null; galleryCount: number; galleries: string[]; categories: string[] };
+export type ReviewItem = { id: string; name: string; url: string | null; platform: string; thumbUrl: string | null; galleryCount: number; galleries: string[]; categories: string[]; aiFlag: string | null };
 
-/** The editor's queue: unreviewed entries with a screenshot, most-featured first. */
-export async function getReviewQueue(db: DbClient, limit = 24): Promise<ReviewItem[]> {
-  const { data, error } = await db.rpc("showcase_review_queue", { p_limit: limit });
+/** new: unreviewed sites · flagged: unreviewed sites the AI thinks look broken or low quality. */
+export type ReviewQueueName = "new" | "flagged";
+
+/** The editor's queue: unreviewed entries with a screenshot, most-featured (or most broken) first. */
+export async function getReviewQueue(db: DbClient, limit = 24, queue: ReviewQueueName = "new"): Promise<ReviewItem[]> {
+  const { data, error } = await db.rpc("showcase_review_queue", { p_limit: limit, p_queue: queue });
   if (error) throw error;
   return data.map((row) => ({
     id: row.id,
@@ -98,7 +101,15 @@ export async function getReviewQueue(db: DbClient, limit = 24): Promise<ReviewIt
     galleryCount: row.gallery_count,
     galleries: row.galleries,
     categories: row.categories,
+    aiFlag: row.ai_flag,
   }));
+}
+
+/** How many unreviewed sites wait in each queue. */
+export async function getQueueCounts(db: DbClient): Promise<Record<ReviewQueueName, number>> {
+  const { data, error } = await db.rpc("showcase_queue_counts");
+  if (error) throw error;
+  return { new: Number(data[0]?.new ?? 0), flagged: Number(data[0]?.flagged ?? 0) };
 }
 
 export type ReviewAction = "keep" | "feature" | "hide";

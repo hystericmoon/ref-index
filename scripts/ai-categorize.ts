@@ -1,15 +1,17 @@
-// Sorts the showcase items the keyword pass (categorize-showcase.ts) left without a category,
-// by asking Claude to look at each site's screenshot and its own title, description and headings.
+// Sorts every live showcase item into categories and flags screenshots that look broken or low
+// quality, by asking Claude to look at each site's screenshot and its own title, description and
+// headings. Replaces the keyword categories (categorize-showcase.ts) except ones an editor set by
+// hand. Flags only feed the "Flagged by AI" queue in /curate; nothing is hidden automatically.
 // Runs through the Message Batches API (half price, done within a day, usually an hour).
 //
-// 1. node scripts/ai-categorize.ts submit [--model claude-opus-5-5] [--limit N]
-//    Sends one batch and saves its id to tmp/ai-categorize/batch.json.
+// 1. node scripts/ai-categorize.ts submit [--model claude-haiku-5-5] [--limit N]
+//    Sends one batch of items not checked yet and saves its id to tmp/ai-categorize/batch.json.
 // 2. node scripts/ai-categorize.ts collect
 //    When the batch has ended, writes tmp/ai-categorize/categories.sql and prints the counts.
-// 3. supabase db query --linked -f tmp/ai-categorize/categories.sql
+// 3. supabase db query --linked -f tmp/ai-categorize/categories.sql, then delete batch.json.
 //
 // Needs ANTHROPIC_API_KEY, NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in
-// .env.local, and tmp/site-meta/meta.ndjson from site-meta.ts. Hand-set categories are never touched.
+// .env.local, and tmp/site-meta/meta.ndjson from site-meta.ts.
 
 import Anthropic from "@anthropic-ai/sdk";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -33,10 +35,10 @@ const DIR = "tmp/ai-categorize";
 const BATCH_FILE = `${DIR}/batch.json`;
 mkdirSync(DIR, { recursive: true });
 
-const client = new Anthropic({ apiKey: env("ANTHROPIC_API_KEY") });
 const supabaseUrl = env("NEXT_PUBLIC_SUPABASE_URL");
 
-const SYSTEM = `You sort websites and apps into categories for a free gallery of design references.
+const SYSTEM = `You sort websites and apps into categories for a free gallery of design references, and
+check whether each screenshot is worth showing to designers.
 
 Categories, as id: label (meaning):
 ${CATEGORIES.map((c) => `- ${c.id}: ${c.label} (${c.group === "type" ? "what kind of site" : "what field it is in"})`).join("\n")}
@@ -44,23 +46,37 @@ ${CATEGORIES.map((c) => `- ${c.id}: ${c.label} (${c.group === "type" ? "what kin
 Pick at most one "what kind of site" category and at most two "what field" categories that clearly fit.
 Use the screenshot and the text; the text may be in any language. A studio or agency's own site is
 "agency" even when its clients are in other fields; only add a field when the site itself is about it.
-If nothing clearly fits, return an empty list.`;
+If nothing clearly fits, return an empty list.
+
+"looks" describes the screenshot:
+- "broken": an error or "not found" page, a blank or half-loaded page, a login wall, a cookie or
+  pop-up covering most of the page, "coming soon", a parked or for-sale domain, or a different site
+  than the name suggests.
+- "low_quality": a working page with dated, generic or amateur visual design that a designer would
+  not use as a reference.
+- "fine": anything else, including plain or minimal designs done with care.
+With no screenshot, answer "fine".`;
 
 const SCHEMA = {
   type: "object",
   properties: {
     categories: { type: "array", items: { type: "string", enum: CATEGORIES.map((c) => c.id) } },
+    looks: { type: "string", enum: ["fine", "broken", "low_quality"] },
   },
-  required: ["categories"],
+  required: ["categories", "looks"],
   additionalProperties: false,
 } as const;
 
 type Meta = { id: string; title?: string; description?: string; keywords?: string; headings?: string };
-type Item = { id: string; name: string; url: string; platform: string; thumb_path: string | null };
+type Item = { id: string; name: string; url: string | null; platform: string; thumb_path: string | null };
+
+function client() {
+  return new Anthropic({ apiKey: env("ANTHROPIC_API_KEY") });
+}
 
 async function submit() {
   if (existsSync(BATCH_FILE)) throw new Error(`${BATCH_FILE} exists; run collect first, or delete it to start over.`);
-  const model = arg("model", "claude-opus-5-5");
+  const model = arg("model", "claude-haiku-5-5");
   const limit = Number(arg("limit", "100000"));
 
   const metas = new Map<string, Meta>();
@@ -70,11 +86,11 @@ async function submit() {
     metas.set(m.id, m);
   }
 
-  // Live, listed items with no category that an editor hasn't set.
+  // Live, listed items the AI hasn't checked yet (dead ones sit in the archive already).
   const items: Item[] = [];
   for (let from = 0; items.length < limit; from += 1000) {
     const response = await fetch(
-      `${supabaseUrl}/rest/v1/showcase_items?select=id,name,url,platform,thumb_path&status=eq.listed&categories=eq.{}&categories_set_at=is.null&or=(thumb_path.not.is.null,thumb_checked_at.is.null)&order=id`,
+      `${supabaseUrl}/rest/v1/showcase_items?select=id,name,url,platform,thumb_path&status=eq.listed&ai_checked_at=is.null&or=(thumb_path.not.is.null,thumb_checked_at.is.null)&order=id`,
       { headers: { apikey: env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"), range: `${from}-${from + 999}` } },
     );
     if (!response.ok) throw new Error(`Couldn't read showcase items: ${response.status}`);
@@ -94,6 +110,7 @@ async function submit() {
       meta?.description && `Description: ${meta.description}`,
       meta?.keywords && `Keywords: ${meta.keywords}`,
       meta?.headings && `Headings: ${meta.headings}`,
+      !item.thumb_path && "No screenshot.",
     ]
       .filter(Boolean)
       .join("\n");
@@ -114,15 +131,16 @@ async function submit() {
     };
   });
 
-  if (!requests.length) return console.error("Nothing to sort.");
-  const batch = await client.messages.batches.create({ requests });
+  if (!requests.length) return console.error("Nothing to check.");
+  const batch = await client().messages.batches.create({ requests });
   writeFileSync(BATCH_FILE, JSON.stringify({ id: batch.id, model, count: requests.length }));
   console.error(`Sent ${requests.length} sites to ${model} as batch ${batch.id}.`);
 }
 
 async function collect() {
   const { id } = JSON.parse(readFileSync(BATCH_FILE, "utf8")) as { id: string };
-  const batch = await client.messages.batches.retrieve(id);
+  const anthropic = client();
+  const batch = await anthropic.messages.batches.retrieve(id);
   if (batch.processing_status !== "ended") {
     const c = batch.request_counts;
     console.error(`Still running: ${c.processing} left, ${c.succeeded} done, ${c.errored} errored.`);
@@ -132,11 +150,11 @@ async function collect() {
 
   const rows: string[] = [];
   const counts = new Map<string, number>();
+  const looks = new Map<string, number>();
   let failed = 0;
-  let empty = 0;
   let input = 0;
   let output = 0;
-  for await (const result of await client.messages.batches.results(id)) {
+  for await (const result of await anthropic.messages.batches.results(id)) {
     if (result.result.type !== "succeeded") {
       failed++;
       continue;
@@ -149,24 +167,27 @@ async function collect() {
       failed++;
       continue;
     }
-    const picked = ((JSON.parse(text) as { categories: string[] }).categories ?? []).filter((c) => CATEGORY_IDS.has(c));
-    const types = picked.filter((c) => CATEGORIES.find((x) => x.id === c)?.group === "type").slice(0, 1);
-    const fields = picked.filter((c) => CATEGORIES.find((x) => x.id === c)?.group === "industry").slice(0, 2);
-    const cats = [...new Set([...types, ...fields])];
-    if (!cats.length) empty++;
+    const answer = JSON.parse(text) as { categories?: string[]; looks?: string };
+    const picked = (answer.categories ?? []).filter((c) => CATEGORY_IDS.has(c));
+    const group = (c: string) => CATEGORIES.find((x) => x.id === c)?.group;
+    const cats = [...new Set([...picked.filter((c) => group(c) === "type").slice(0, 1), ...picked.filter((c) => group(c) === "industry").slice(0, 2)])];
+    const flag = answer.looks === "broken" || answer.looks === "low_quality" ? answer.looks : null;
     for (const c of cats) counts.set(c, (counts.get(c) ?? 0) + 1);
-    rows.push(`('${result.custom_id}'::uuid, array[${cats.map((c) => `'${c}'`).join(",")}]::text[])`);
+    looks.set(answer.looks ?? "?", (looks.get(answer.looks ?? "?") ?? 0) + 1);
+    rows.push(`('${result.custom_id}'::uuid, array[${cats.map((c) => `'${c}'`).join(",")}]::text[], ${flag ? `'${flag}'` : "null"})`);
   }
 
+  // Categories only where an editor hasn't set them; a flag on every checked item.
   const sql = [];
   for (let i = 0; i < rows.length; i += 2000) {
     sql.push(
-      `update public.showcase_items s set categories = v.c from (values ${rows.slice(i, i + 2000).join(",\n")}) v(id, c) where s.id = v.id and s.categories_set_at is null and s.categories = '{}';`,
+      `update public.showcase_items s set categories = case when s.categories_set_at is null then v.c else s.categories end, ai_flag = v.f, ai_checked_at = now() from (values ${rows.slice(i, i + 2000).join(",\n")}) v(id, c, f) where s.id = v.id;`,
     );
   }
   writeFileSync(`${DIR}/categories.sql`, sql.join("\n"));
   console.error([...counts].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(" · "));
-  console.error(`${rows.length} answered (${empty} with no fitting category), ${failed} failed. Tokens: ${input} in, ${output} out.`);
+  console.error(`Looks: ${[...looks].map(([k, n]) => `${k} ${n}`).join(" · ")}`);
+  console.error(`${rows.length} answered, ${failed} failed. Tokens: ${input} in, ${output} out.`);
 }
 
 const mode = process.argv[2];

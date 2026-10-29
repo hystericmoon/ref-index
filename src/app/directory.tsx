@@ -3,6 +3,8 @@
 import { ExternalLink, Search, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { amEditor } from "@/app/curate/actions";
+import { EditorTools } from "@/app/curate/editor-tools";
 import { Beam, LiquidSwitch, Orb } from "@/components/effects";
 import { CATEGORIES } from "@/lib/categories";
 import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation } from "@/lib/db/showcase";
@@ -122,7 +124,7 @@ function CategoryChips({ value, onChange, counts }: { value: string; onChange: (
   );
 }
 
-function ShowcaseCard({ entry: e }: { entry: ShowcaseEntry }) {
+function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; editor: boolean; onHidden: () => void }) {
   const href = e.url ?? e.featured[0]?.sourceUrl;
   const picture = (
     // The name link below is the accessible link; the picture repeats it for pointer users.
@@ -190,6 +192,7 @@ function ShowcaseCard({ entry: e }: { entry: ShowcaseEntry }) {
             </span>
           ))}
         </p>
+        {editor && <EditorTools item={e} onHidden={onHidden} />}
       </div>
     </li>
   );
@@ -225,6 +228,11 @@ function ShowcaseView({
   const [gallery, setGallery] = useState("");
   const firstRender = useRef(true);
   const request = useRef(0);
+  // Editors get curation tools on each card; everyone else sees the plain page.
+  const [editor, setEditor] = useState(false);
+  useEffect(() => {
+    amEditor().then(setEditor, () => {});
+  }, []);
 
   async function load(offset: number) {
     const id = ++request.current;
@@ -328,7 +336,15 @@ function ShowcaseView({
       ) : (
         <ul className="grid gap-x-4 gap-y-6 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
           {list.map((e) => (
-            <ShowcaseCard key={e.id} entry={e} />
+            <ShowcaseCard
+              key={e.id}
+              entry={e}
+              editor={editor}
+              onHidden={() => {
+                setEntries((prev) => prev.filter((x) => x.id !== e.id));
+                setMatchTotal((n) => n - 1);
+              }}
+            />
           ))}
         </ul>
       )}

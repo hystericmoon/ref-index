@@ -1,7 +1,7 @@
 "use server";
 
 import { CATEGORY_IDS } from "@/lib/categories";
-import { getReviewQueue, reviewItem, setCategories, type ReviewAction, type ReviewItem } from "@/lib/db/showcase";
+import { getReviewQueue, isEditor, reviewItem, setCategories, type ReviewAction, type ReviewItem, type ReviewQueueName } from "@/lib/db/showcase";
 import { createClient } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,8 +30,13 @@ export async function categoriesAction(id: string, categories: string[]): Promis
 }
 
 /** The next unreviewed entries, skipping ones already on screen. */
-export async function moreToReview(exclude: string[]): Promise<ReviewItem[]> {
+export async function moreToReview(exclude: string[], queue: ReviewQueueName = "new"): Promise<ReviewItem[]> {
   const skip = new Set(exclude.filter((id) => UUID.test(id)).slice(0, 200));
-  const items = await getReviewQueue(await createClient(), 60);
+  const items = await getReviewQueue(await createClient(), 60, queue === "flagged" ? "flagged" : "new");
   return items.filter((item) => !skip.has(item.id)).slice(0, 24);
+}
+
+/** Whether the signed-in visitor can curate, for showing editor tools on public pages. */
+export async function amEditor(): Promise<boolean> {
+  return isEditor(await createClient());
 }

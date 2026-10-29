@@ -226,3 +226,8 @@ _(ideas and out-of-scope items noted during sessions)_
 - `scripts/ai-categorize.ts`: sorts the ~10,500 sites the keywords missed with Claude (screenshot + page
   text) through the Batches API; `submit`, then `collect` writes SQL. Needs `ANTHROPIC_API_KEY` in
   `.env.local` (added by the owner, never read by the assistant). Not run yet.
+- AI pass now checks every live site (Haiku 5.5 by default), replaces keyword categories unless hand-set,
+  and flags screenshots that look broken or low quality into a "Flagged by AI" queue in `/curate`.
+  Flags never hide anything by themselves.
+- Editors see Feature / Hide / category tools under each homepage card. The public showcase JSON is
+  edge-cached 10 minutes, so a hidden site can linger that long for other visitors.

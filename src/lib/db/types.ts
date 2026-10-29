@@ -273,6 +273,8 @@ export type Database = {
       }
       showcase_items: {
         Row: {
+          ai_checked_at: string | null
+          ai_flag: string | null
           categories: string[]
           categories_set_at: string | null
           created_at: string
@@ -290,6 +292,8 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          ai_checked_at?: string | null
+          ai_flag?: string | null
           categories?: string[]
           categories_set_at?: string | null
           created_at?: string
@@ -307,6 +311,8 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          ai_checked_at?: string | null
+          ai_flag?: string | null
           categories?: string[]
           categories_set_at?: string | null
           created_at?: string
@@ -512,9 +518,17 @@ export type Database = {
           items: number
         }[]
       }
-      showcase_review_queue: {
-        Args: { p_limit?: number }
+      showcase_queue_counts: {
+        Args: never
         Returns: {
+          flagged: number
+          new: number
+        }[]
+      }
+      showcase_review_queue: {
+        Args: { p_limit?: number; p_queue?: string }
+        Returns: {
+          ai_flag: string
           categories: string[]
           galleries: string[]
           gallery_count: number
