@@ -275,3 +275,7 @@ _(ideas and out-of-scope items noted during sessions)_
   NEXT_PUBLIC_THUMBS_URL / NEXT_PUBLIC_DETAILS_URL are set (set locally; production after the v2
   retake ends and a final sync). The daily job now runs the sync. wrangler runs from outside the
   repo (inside it, it fails looking for pnpm); projects were made with classic Pages (`--force`).
+- Live site switched to Cloudflare Pages (0c6d424): `.env.production` holds the two public image
+  addresses. Final sync after the v2 retake: 11,764 thumbnails, 5,410 detail captures; live cards and
+  detail pages checked (all 200). Supabase still stores every image (684 MB); later, captures could
+  save straight into cdn/ so the bucket can be emptied.
