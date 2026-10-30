@@ -131,10 +131,11 @@ function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; ed
         <Image
           src={e.thumbUrl}
           alt=""
-          width={640}
-          height={400}
+          width={1280}
+          height={800}
           unoptimized
           loading="lazy"
+          decoding="async"
           className="size-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
         />
       ) : (

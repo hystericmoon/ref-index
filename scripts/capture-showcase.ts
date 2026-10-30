@@ -1,5 +1,6 @@
-// Screenshots for the showcase. Visits each item's live address at 1280×800 in Chromium
-// and saves a 640px WebP of the first screen to <out>/img/<item id>.webp. Only the sites'
+// Screenshots for the showcase. Visits each item's live address at 1280×800 in Chromium,
+// rendered at 2× like a retina screen, and saves a 1280px WebP of the first screen to
+// <out>/img/<item id>.webp, so cards stay sharp on retina laptops and phones. Only the sites'
 // own pages are visited; gallery pages and gallery images are never saved.
 //
 // Pages that show a bot check, an error status or a blank screen are skipped, never
@@ -39,8 +40,12 @@ const workers = Number(arg("workers", "6"));
 // --wait <ms> gives slow intros and loaders longer to finish (default 2.5 s).
 const idsFile = arg("ids", "");
 const settle = Number(arg("wait", "2500"));
+const width = Number(arg("width", "1280"));
+const quality = Number(arg("quality", "72"));
 // Retakes are saved under img/r/ so the new file gets a new address (the old one is cached for a year).
-const imgDir = idsFile ? join(out, "img", "r") : join(out, "img");
+// --prefix <folder> picks another one, e.g. --prefix v2 for the sharper recapture (img/v2/).
+const prefix = arg("prefix", idsFile ? "r" : "");
+const imgDir = join(out, "img", prefix);
 mkdirSync(imgDir, { recursive: true });
 
 // Items already tried in any batch folder are skipped, whatever the outcome.
@@ -113,7 +118,8 @@ async function capture(context: BrowserContext, item: Item): Promise<string | nu
     const shot = await page.screenshot({ type: "png", timeout: 15_000 });
     const stats = await sharp(shot).stats();
     if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return "blank screen";
-    await sharp(shot).resize({ width: 640 }).webp({ quality: 70 }).toFile(join(imgDir, `${item.id}.webp`));
+    // smartSubsample keeps small coloured text from smearing.
+    await sharp(shot).resize({ width }).webp({ quality, smartSubsample: true, effort: 5 }).toFile(join(imgDir, `${item.id}.webp`));
     return null;
   } catch (error) {
     return (error as Error).message.split("\n")[0].slice(0, 120);
@@ -125,7 +131,7 @@ async function capture(context: BrowserContext, item: Item): Promise<string | nu
 const browser = await chromium.launch({ args: ["--mute-audio"] });
 const context = await browser.newContext({
   viewport: { width: 1280, height: 800 },
-  deviceScaleFactor: 1,
+  deviceScaleFactor: 2,
   reducedMotion: "reduce",
   locale: "en-US",
 });

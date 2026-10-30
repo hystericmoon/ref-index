@@ -132,7 +132,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
         ) : item.thumbUrl ? (
           <>
             <div className="w-full max-w-5xl overflow-hidden rounded-2xl border bg-muted">
-              <Image src={item.thumbUrl} alt={`The top of ${item.name}'s home page.`} width={640} height={400} unoptimized className="h-auto w-full" />
+              <Image src={item.thumbUrl} alt={`The top of ${item.name}'s home page.`} width={1280} height={800} unoptimized className="h-auto w-full" />
             </div>
             <p className="text-sm text-muted-foreground">Full-page and inner-page captures are made for Top picks.</p>
           </>

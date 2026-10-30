@@ -261,3 +261,9 @@ _(ideas and out-of-scope items noted during sessions)_
   by hand, 4 kept), 2,577 bad captures retaken, and 229 retakes that show a gone site (parked, for
   sale, error, closed) moved to the Archive. ~680 sites still show a loader, cookie or age wall even
   with an 8 s wait; they stay live. 10,849 live sites have a screenshot.
+- Sharper screenshots: cards are ~290-560 CSS px wide, so on retina laptops and 3x phones the old
+  640px, 1x captures were stretched and soft. `capture-showcase.ts` now renders at 2x and saves
+  1280px WebP (q72, smartSubsample, ~30 KB vs ~13 KB); `--prefix v2` puts the recapture under
+  img/v2/ (new paths, old ones are cached for a year). All 10,849 live sites are being recaptured
+  (tmp/run-v2.sh, Top picks first, ~+300 MB; bucket was 469 MB). Old files stay until the run is
+  checked. Later: detail captures (960px, q60) are still 1x; recapturing them would cost ~250 MB more.
