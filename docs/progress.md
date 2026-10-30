@@ -267,3 +267,10 @@ _(ideas and out-of-scope items noted during sessions)_
   img/v2/ (new paths, old ones are cached for a year). All 10,849 live sites are being recaptured
   (tmp/run-v2.sh, Top picks first, ~+300 MB; bucket was 469 MB). Old files stay until the run is
   checked. Later: detail captures (960px, q60) are still 1x; recapturing them would cost ~250 MB more.
+- Free image hosting prepared: `scripts/cdn-sync.ts` mirrors every image the site uses into cdn/
+  (not committed; back it up) and uploads it to two Cloudflare Pages projects, openrefs-thumbs and
+  openrefs-details (.pages.dev; free, unlimited traffic, 20,000 files per project, 1-year immutable
+  cache). First upload: 11,764 thumbnails, 5,410 detail captures. The site switches when
+  NEXT_PUBLIC_THUMBS_URL / NEXT_PUBLIC_DETAILS_URL are set (set locally; production after the v2
+  retake ends and a final sync). The daily job now runs the sync. wrangler runs from outside the
+  repo (inside it, it fails looking for pnpm); projects were made with classic Pages (`--force`).

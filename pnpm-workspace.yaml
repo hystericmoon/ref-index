@@ -5,6 +5,9 @@ allowBuilds:
   sharp: true
   supabase: true
   unrs-resolver: true
+  # wrangler (Cloudflare Pages uploads) works without these install scripts.
+  esbuild: false
+  workerd: false
 onlyBuiltDependencies:
   - "@tailwindcss/oxide"
   - sharp

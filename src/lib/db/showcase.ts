@@ -17,7 +17,12 @@ export type ShowcaseEntry = {
   featured: { gallery: string; sourceUrl: string }[];
 };
 
-const THUMBS = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/showcase`;
+// Images live in the Supabase bucket. Once scripts/cdn-sync.ts has uploaded them to Cloudflare Pages,
+// NEXT_PUBLIC_THUMBS_URL and NEXT_PUBLIC_DETAILS_URL point at those copies instead (free traffic).
+const BUCKET = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/showcase`;
+const THUMBS = process.env.NEXT_PUBLIC_THUMBS_URL || BUCKET;
+const DETAILS = process.env.NEXT_PUBLIC_DETAILS_URL || BUCKET;
+const imageUrl = (path: string) => `${path.startsWith("img/details/") ? DETAILS : THUMBS}/${path}`;
 
 /** top: staff picks and sites featured by 2+ galleries · all: every live entry · archive: sites that are gone. */
 export type ShowcaseView = "top" | "all" | "archive";
@@ -45,7 +50,7 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
         url: row.url,
         platform: row.platform,
         tags: row.tags,
-        thumbUrl: row.thumb_path ? `${THUMBS}/${row.thumb_path}` : null,
+        thumbUrl: row.thumb_path ? imageUrl(row.thumb_path) : null,
         staffPick: row.staff_pick,
         galleryCount: row.gallery_count,
         categories: row.categories,
@@ -97,7 +102,7 @@ export async function getReviewQueue(db: DbClient, limit = 24, queue: ReviewQueu
     name: row.name,
     url: row.url,
     platform: row.platform,
-    thumbUrl: row.thumb_path ? `${THUMBS}/${row.thumb_path}` : null,
+    thumbUrl: row.thumb_path ? imageUrl(row.thumb_path) : null,
     galleryCount: row.gallery_count,
     galleries: row.galleries,
     categories: row.categories,
@@ -162,14 +167,14 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
     url: row.url,
     platform: row.platform,
     tags: row.tags,
-    thumbUrl: row.thumb_path ? `${THUMBS}/${row.thumb_path}` : null,
+    thumbUrl: row.thumb_path ? imageUrl(row.thumb_path) : null,
     staffPick: row.staff_pick,
     galleryCount: row.gallery_count,
     categories: row.categories,
     featured: (features ?? []).map((f) => ({ gallery: f.gallery, sourceUrl: f.source_url })),
     status: row.status,
     details: d
-      ? { full: `${THUMBS}/${d.full}`, fullHeight: d.fullHeight, pages: d.pages.map((p) => ({ url: p.url, title: p.title, imageUrl: `${THUMBS}/${p.path}` })) }
+      ? { full: imageUrl(d.full), fullHeight: d.fullHeight, pages: d.pages.map((p) => ({ url: p.url, title: p.title, imageUrl: imageUrl(p.path) })) }
       : null,
   };
 }

@@ -41,3 +41,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /tmp
+# Local mirror of the images uploaded to Cloudflare Pages (scripts/cdn-sync.ts)
+/cdn
