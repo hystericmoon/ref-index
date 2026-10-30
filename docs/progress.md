@@ -257,3 +257,7 @@ _(ideas and out-of-scope items noted during sessions)_
 - `scripts/daily-captures.sh` runs the screenshot and detail captures after the daily refresh; the
   owner registers it in Windows Task Scheduler. Award dates: gallery sitemaps only give edit dates,
   so items keep their import date; new items get the day the refresh first saw them.
+- Looks pass done: 364 weak or taken-over sites hidden (both looks agreed; 41 Top picks checked
+  by hand, 4 kept), 2,577 bad captures retaken, and 229 retakes that show a gone site (parked, for
+  sale, error, closed) moved to the Archive. ~680 sites still show a loader, cookie or age wall even
+  with an 8 s wait; they stay live. 10,849 live sites have a screenshot.
