@@ -246,3 +246,14 @@ _(ideas and out-of-scope items noted during sessions)_
   joshpuckett, angelo.so…); they're reset to no address and sit in the Archive. Galleries with their
   own pattern no longer use the generic fallback.
 - Screenshot sorting in-session: 92% of live sites with a screenshot now have a category.
+- One showcase view: removed the "Search the galleries" tab and the Web / 3D / Mobile switch (the
+  categories cover it); galleries are credited at the foot. Pages are 100rem wide.
+- Merged 616 duplicate entries (same address) into 575, carrying their gallery features over; Top
+  picks grew to ~3,200. 73 One Page Love entries whose address was an ad link are archived.
+- Looks pass (in-session, Haiku on plan usage): every live screenshot scored 0-4. Score-0 captures
+  (loaders, cookie walls, app store pages) are retaken with `capture-showcase.ts --ids … --wait 8000`
+  under img/r/ (new paths, since screenshots are cached for a year). Weak ones get a stricter second look
+  before anything is hidden.
+- `scripts/daily-captures.sh` runs the screenshot and detail captures after the daily refresh; the
+  owner registers it in Windows Task Scheduler. Award dates: gallery sitemaps only give edit dates,
+  so items keep their import date; new items get the day the refresh first saw them.

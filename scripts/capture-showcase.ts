@@ -35,7 +35,13 @@ function arg(name: string, fallback: string): string {
 const out = arg("out", "tmp/showcase-thumbs/batch");
 const limit = Number(arg("limit", "500"));
 const workers = Number(arg("workers", "6"));
-mkdirSync(join(out, "img"), { recursive: true });
+// Retakes: --ids <file> (one item id per line) recaptures those items even if tried before, and
+// --wait <ms> gives slow intros and loaders longer to finish (default 2.5 s).
+const idsFile = arg("ids", "");
+const settle = Number(arg("wait", "2500"));
+// Retakes are saved under img/r/ so the new file gets a new address (the old one is cached for a year).
+const imgDir = idsFile ? join(out, "img", "r") : join(out, "img");
+mkdirSync(imgDir, { recursive: true });
 
 // Items already tried in any batch folder are skipped, whatever the outcome.
 const root = join(out, "..");
@@ -49,7 +55,18 @@ for (const dir of readdirSync(root)) {
 const supabaseUrl = env("NEXT_PUBLIC_SUPABASE_URL");
 const key = env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
 const items: Item[] = [];
-for (let from = 0; items.length < limit; from += 1000) {
+if (idsFile) {
+  // Retakes go in their own folder tree (e.g. tmp/showcase-retakes), so "tried" means retaken.
+  const ids = readFileSync(idsFile, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => /^[0-9a-f-]{36}$/.test(l) && !tried.has(l));
+  for (let i = 0; i < ids.length && items.length < limit; i += 100) {
+    const response = await fetch(`${supabaseUrl}/rest/v1/showcase_items?select=id,url&url=not.is.null&id=in.(${ids.slice(i, i + 100).join(",")})`, {
+      headers: { apikey: key },
+    });
+    if (!response.ok) throw new Error(`Couldn't read showcase items: ${response.status}`);
+    items.push(...((await response.json()) as Item[]).filter((it) => /^https?:\/\//.test(it.url)));
+  }
+}
+for (let from = 0; !idsFile && items.length < limit; from += 1000) {
   const response = await fetch(
     `${supabaseUrl}/rest/v1/showcase_items?select=id,url&url=not.is.null&thumb_checked_at=is.null&order=first_seen.desc,created_at.desc,id`,
     { headers: { apikey: key, range: `${from}-${from + 999}` } },
@@ -87,7 +104,7 @@ async function capture(context: BrowserContext, item: Item): Promise<string | nu
     });
     if (response && response.status() >= 400) return `status ${response.status()}`;
     await page.addStyleTag({ content: HIDE_BANNERS }).catch(() => {});
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(settle);
     const title = await page.title().catch(() => "");
     const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
     if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return "bot check page";
@@ -96,7 +113,7 @@ async function capture(context: BrowserContext, item: Item): Promise<string | nu
     const shot = await page.screenshot({ type: "png", timeout: 15_000 });
     const stats = await sharp(shot).stats();
     if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return "blank screen";
-    await sharp(shot).resize({ width: 640 }).webp({ quality: 70 }).toFile(join(out, "img", `${item.id}.webp`));
+    await sharp(shot).resize({ width: 640 }).webp({ quality: 70 }).toFile(join(imgDir, `${item.id}.webp`));
     return null;
   } catch (error) {
     return (error as Error).message.split("\n")[0].slice(0, 120);
