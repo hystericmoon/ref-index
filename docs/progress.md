@@ -264,9 +264,10 @@ _(ideas and out-of-scope items noted during sessions)_
 - Sharper screenshots: cards are ~290-560 CSS px wide, so on retina laptops and 3x phones the old
   640px, 1x captures were stretched and soft. `capture-showcase.ts` now renders at 2x and saves
   1280px WebP (q72, smartSubsample, ~30 KB vs ~13 KB); `--prefix v2` puts the recapture under
-  img/v2/ (new paths, old ones are cached for a year). All 10,849 live sites are being recaptured
-  (tmp/run-v2.sh, Top picks first, ~+300 MB; bucket was 469 MB). Old files stay until the run is
-  checked. Later: detail captures (960px, q60) are still 1x; recapturing them would cost ~250 MB more.
+  img/v2/ (new paths, old ones are cached for a year). 10,156 of 10,849 live sites recaptured; the
+  693 that failed (mostly the 15 s screenshot timeout at 2x) keep their old screenshot. The 12,256 old
+  files of recaptured sites were deleted (owner approved); storage is 684 MB of 1 GB. Later: detail
+  captures (960px, q60) are still 1x; recapturing them would cost ~250 MB more.
 - Free image hosting prepared: `scripts/cdn-sync.ts` mirrors every image the site uses into cdn/
   (not committed; back it up) and uploads it to two Cloudflare Pages projects, openrefs-thumbs and
   openrefs-details (.pages.dev; free, unlimited traffic, 20,000 files per project, 1-year immutable
