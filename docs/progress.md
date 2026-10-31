@@ -283,3 +283,8 @@ _(ideas and out-of-scope items noted during sessions)_
   of the 693 failed sites retaken and synced to Cloudflare after each batch. 10,763 live sites are
   sharp now; 86 keep an old 1x screenshot (blank, 403, or too slow even at 45 s). 773 replaced old
   files deleted; storage 696 MB.
+- Images no longer stored in Supabase: capture batches go into cdn/ and up to Cloudflare Pages with
+  `cdn-sync.ts --add <batch>` before they're recorded (no broken-image gap); a failed upload skips
+  recording. The site's fallback is the Pages address. All 17,174 used images checked on Pages. The
+  bucket copies (21,761 files, 696 MB) are ready to delete with `bash tmp/empty-showcase-bucket.sh`
+  (the owner runs it). cdn/ is now the only copy besides Pages: back it up.
