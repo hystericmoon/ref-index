@@ -327,5 +327,8 @@ _(ideas and out-of-scope items noted during sessions)_
   (tag `showcase`, cleared by editors' actions), so most visits skip Supabase (local TTFB ~400 ms → ~25 ms).
   border-beam, liquid-gooey, thinking-orbs, the editor tools, toaster and account menu load after the
   page; signed-out visitors skip the editor check. Home JS 250 → 168 KB gz. Cards are memoized; the
-  panel prefetches on hover/touch and slides up with a skeleton (layout + loading.tsx). Lighthouse
-  mobile before (live): / 73, all 77, portfolio 78, site 89 (LCP 3.7-4.6 s); after: see next entry.
+  panel prefetches on hover/touch and slides up with a skeleton (layout + loading.tsx).
+  Live Lighthouse before → after (score, TBT): mobile / 73→91 (607→119 ms), all 77→86, portfolio
+  78→86, site 89→96; desktop / 92→100, all 86→100, portfolio 95→100, site 85→98 (TBT now 0). Mobile LCP
+  still 2.7-4.0 s (simulated; scripts before first paint). Live TTFB 0.4-1.8 s → 0.25-0.57 s.
+  Later: 640px card thumbnails (needs a third Pages project; thumbs is near its 20,000-file cap).
