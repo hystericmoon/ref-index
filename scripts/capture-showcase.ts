@@ -40,6 +40,10 @@ const workers = Number(arg("workers", "6"));
 // --wait <ms> gives slow intros and loaders longer to finish (default 2.5 s).
 const idsFile = arg("ids", "");
 const settle = Number(arg("wait", "2500"));
+// --shot <ms> gives heavy pages longer to paint the 2x screenshot (default 15 s).
+const shotTimeout = Number(arg("shot", "15000"));
+// A page that never settles is dropped after this long (90 s with the defaults).
+const giveUp = 72_500 + settle + shotTimeout;
 const width = Number(arg("width", "1280"));
 const quality = Number(arg("quality", "72"));
 // Retakes are saved under img/r/ so the new file gets a new address (the old one is cached for a year).
@@ -115,7 +119,7 @@ async function capture(context: BrowserContext, item: Item): Promise<string | nu
     if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return "bot check page";
     if (PARKED.test(title) || PARKED.test(text)) return "parked or replaced domain";
     if (NETWORK_BLOCK.test(title) || NETWORK_BLOCK.test(text)) return BLOCKED_HERE;
-    const shot = await page.screenshot({ type: "png", timeout: 15_000 });
+    const shot = await page.screenshot({ type: "png", timeout: shotTimeout });
     const stats = await sharp(shot).stats();
     if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return "blank screen";
     // smartSubsample keeps small coloured text from smearing.
@@ -147,7 +151,7 @@ await Promise.all(
       let timer: ReturnType<typeof setTimeout> | undefined;
       const failure = await Promise.race([
         capture(context, item),
-        new Promise<string>((resolve) => (timer = setTimeout(() => resolve("gave up after 90 s"), 90_000))),
+        new Promise<string>((resolve) => (timer = setTimeout(() => resolve(`gave up after ${giveUp / 1000} s`), giveUp))),
       ]);
       clearTimeout(timer);
       appendFileSync(join(out, "results.ndjson"), JSON.stringify({ id: item.id, ok: !failure, reason: failure }) + "\n");

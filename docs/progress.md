@@ -279,3 +279,7 @@ _(ideas and out-of-scope items noted during sessions)_
   addresses. Final sync after the v2 retake: 11,764 thumbnails, 5,410 detail captures; live cards and
   detail pages checked (all 200). Supabase still stores every image (684 MB); later, captures could
   save straight into cdn/ so the bucket can be emptied.
+- v2 retry (`--wait 6000 --shot 45000`, new `--shot` flag; the give-up limit grows with both): 607
+  of the 693 failed sites retaken and synced to Cloudflare after each batch. 10,763 live sites are
+  sharp now; 86 keep an old 1x screenshot (blank, 403, or too slow even at 45 s). 773 replaced old
+  files deleted; storage 696 MB.
