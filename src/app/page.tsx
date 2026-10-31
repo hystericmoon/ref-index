@@ -1,7 +1,7 @@
 import { HeroDecor } from "@/components/hero-decor";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/brand";
 import { CATEGORY_IDS } from "@/lib/categories";
-import { SHOWCASE_VIEWS, THUMBS, type ShowcaseView } from "@/lib/db/showcase";
+import { SHOWCASE_VIEWS, THUMBS, THUMBS_SMALL, type ShowcaseView } from "@/lib/db/showcase";
 import { cachedDirectoryCounts, cachedShowcasePage } from "@/lib/db/showcase-cache";
 import { Directory } from "./directory";
 
@@ -33,6 +33,7 @@ export default async function Home({
   return (
     <main className="mx-auto flex w-full max-w-[100rem] flex-1 flex-col gap-10 px-4 pb-24 sm:px-6 lg:px-10">
       {/* The first cards' pictures come from Cloudflare Pages: open that connection while the HTML streams (React moves it into <head>). */}
+      <link rel="preconnect" href={THUMBS_SMALL} />
       <link rel="preconnect" href={THUMBS} />
       <header className="relative isolate flex flex-col items-center gap-5 pt-14 pb-2 text-center sm:py-20">
         <HeroDecor />

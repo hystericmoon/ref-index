@@ -1,4 +1,5 @@
 import type { DbClient } from "./client";
+import smallThumbList from "./small-thumbs.json";
 
 export type ShowcaseEntry = {
   id: string;
@@ -6,8 +7,10 @@ export type ShowcaseEntry = {
   url: string | null;
   platform: string;
   tags: string[];
-  /** Public URL of a 640×400 WebP of the site's first screen, when one was captured. */
+  /** Public URL of a 1280×800 WebP of the site's first screen, when one was captured. */
   thumbUrl: string | null;
+  /** The same picture 720px wide, for cards; null when it has no small copy yet. */
+  thumbSmallUrl: string | null;
   /** Chosen by an editor. */
   staffPick: boolean;
   /** How many galleries featured it. */
@@ -21,7 +24,15 @@ export type ShowcaseEntry = {
 // addresses come from .env.production and .env.local.
 export const THUMBS = process.env.NEXT_PUBLIC_THUMBS_URL || "https://openrefs-thumbs.pages.dev";
 export const DETAILS = process.env.NEXT_PUBLIC_DETAILS_URL || "https://openrefs-details.pages.dev";
+export const THUMBS_SMALL = process.env.NEXT_PUBLIC_THUMBS_SM_URL || "https://openrefs-thumbs-sm.pages.dev";
 const imageUrl = (path: string) => `${path.startsWith("img/details/") ? DETAILS : THUMBS}/${path}`;
+
+// Cards are ~290-420 CSS px wide, so most screens need less than the 1280px thumbnail. 720px copies
+// (same paths) live on a third Pages project; small-thumbs.json lists which thumbnails have one
+// (paths without "img/" and ".webp"). Newer captures fall back to the full thumbnail until added.
+const smallThumbs = new Set<string>(smallThumbList);
+const smallThumbUrl = (path: string | null) =>
+  path && smallThumbs.has(path.replace(/^img\//, "").replace(/\.webp$/, "")) ? `${THUMBS_SMALL}/${path}` : null;
 
 /** top: staff picks and sites featured by 2+ galleries · all: every live entry · archive: sites that are gone. */
 export type ShowcaseView = "top" | "all" | "archive";
@@ -50,6 +61,7 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
         platform: row.platform,
         tags: row.tags,
         thumbUrl: row.thumb_path ? imageUrl(row.thumb_path) : null,
+        thumbSmallUrl: smallThumbUrl(row.thumb_path),
         staffPick: row.staff_pick,
         galleryCount: row.gallery_count,
         categories: row.categories,
@@ -167,6 +179,7 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
     platform: row.platform,
     tags: row.tags,
     thumbUrl: row.thumb_path ? imageUrl(row.thumb_path) : null,
+    thumbSmallUrl: smallThumbUrl(row.thumb_path),
     staffPick: row.staff_pick,
     galleryCount: row.gallery_count,
     categories: row.categories,

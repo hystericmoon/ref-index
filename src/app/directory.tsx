@@ -2,7 +2,6 @@
 
 import { ChevronDown, Search, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -13,6 +12,9 @@ import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation } from "@/
 
 // Curation controls only load for editors, so visitors don't download them.
 const EditorTools = dynamic(() => import("@/app/curate/editor-tools").then((m) => m.EditorTools));
+
+/** How wide a card's picture shows: one column fills the screen on phones; in the grid a card is at most ~420px. */
+const CARD_SIZES = "(max-width: 600px) calc(100vw - 2rem), 420px";
 
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
 
@@ -161,12 +163,16 @@ const ShowcaseCard = memo(function ShowcaseCard({
       className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted"
     >
       {e.thumbUrl ? (
-        <Image
+        // A plain img: next/image doesn't take a hand-written srcSet. Cards are ~290-420 CSS px wide
+        // (full width under 600px), so most screens get the 720px copy and only 2x+ screens the 1280px one.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={e.thumbUrl}
+          srcSet={e.thumbSmallUrl ? `${e.thumbSmallUrl} 720w, ${e.thumbUrl} 1280w` : undefined}
+          sizes={e.thumbSmallUrl ? CARD_SIZES : undefined}
           alt=""
           width={1280}
           height={800}
-          unoptimized
           loading={first ? "eager" : "lazy"}
           fetchPriority={first ? "high" : "auto"}
           decoding="async"
