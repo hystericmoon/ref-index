@@ -318,3 +318,8 @@ _(ideas and out-of-scope items noted during sessions)_
   (img/c2/, after a 6 s wait); a 60-site sample found 8 (~13%). A retake that shows much less
   than the old screenshot outside the banner's area (an intro or loader) is set aside under
   <batch>/rejected/ and the old one kept. Full clean-up of all 10,849 live sites running.
+- Cookie-banner clean-up done: all 10,845 live sites scanned; 1,450 screenshots retaken without the
+  banner (img/c2/), 38 kept their old one (retake showed less; set aside in tmp/banners-run2/*/rejected),
+  204 couldn't load and keep theirs. 259 Top picks' detail pages retaken banner-free (img/details/v3/),
+  and 39 of the 86 old 1x detail captures now sharp (46 remain). Random checks all load from Pages and
+  show no banner. Later: newsletter and promo pop-ups (not cookie ones) still appear on a few sites.
