@@ -302,3 +302,7 @@ _(ideas and out-of-scope items noted during sessions)_
   `@modal/(.)site/[id]` with a Radix dialog (`detail-sheet.tsx`). ×, Esc, the backdrop and Back close
   it and leave the list exactly as it was. A direct link or reload still shows the full page;
   the panel's expand button opens that full page. Shared content lives in `site/[id]/site-detail.tsx`.
+- Sharp detail re-take done: 1,776 of 1,862 Top picks have 2x detail captures (full page 2048px,
+  inner pages 1280px) under img/details/v2/, uploaded to Cloudflare before being recorded. 86 keep
+  their old captures (timeouts, blank screens, 402/403). Old detail files pruned from the mirror and
+  Pages; cdn/ is 1.1 GB (details 585 MB, thumbs 440 MB) and Supabase storage stays empty. Back up cdn/.
