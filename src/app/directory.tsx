@@ -123,7 +123,18 @@ function CategoryChips({ value, onChange, counts }: { value: string; onChange: (
   );
 }
 
-function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; editor: boolean; onHidden: () => void }) {
+function ShowcaseCard({
+  entry: e,
+  editor,
+  onHidden,
+  first,
+}: {
+  entry: ShowcaseEntry;
+  editor: boolean;
+  onHidden: () => void;
+  /** In the first row on a wide screen: loaded right away instead of when scrolled near. */
+  first: boolean;
+}) {
   const href = e.url ?? e.featured[0]?.sourceUrl;
   const picture = (
     // The picture opens the site's detail panel over the list; the name below goes straight to the live site.
@@ -140,7 +151,8 @@ function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; ed
           width={1280}
           height={800}
           unoptimized
-          loading="lazy"
+          loading={first ? "eager" : "lazy"}
+          fetchPriority={first ? "high" : "auto"}
           decoding="async"
           className="size-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
         />
@@ -188,10 +200,12 @@ function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; ed
           {e.featured.map((f, i) => (
             <span key={f.gallery} className="flex items-center gap-1.5">
               {i > 0 && <span aria-hidden="true">·</span>}
+              {/* Out of the Tab order, so a page of cards isn't hundreds of stops: the detail panel lists the same links. */}
               <a
                 href={f.sourceUrl}
                 target="_blank"
                 rel="noopener"
+                tabIndex={-1}
                 className="inline-flex min-h-11 items-center font-medium text-link hover:underline sm:min-h-0 sm:py-1"
               >
                 {f.gallery}
@@ -339,10 +353,11 @@ function ShowcaseView({
         </p>
       ) : (
         <ul className="grid gap-x-4 gap-y-6 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
-          {list.map((e) => (
+          {list.map((e, i) => (
             <ShowcaseCard
               key={e.id}
               entry={e}
+              first={i < 5}
               editor={editor}
               onHidden={() => {
                 setEntries((prev) => prev.filter((x) => x.id !== e.id));

@@ -6,6 +6,10 @@
 // Pages that show a bot check, an error status or a blank screen are skipped, never
 // worked around. Every outcome goes to <out>/results.ndjson, so a rerun resumes.
 //
+// Cookie banners: consent platforms are blocked and leftover banners removed (scripts/consent.ts).
+// --banners <ids file> retakes only those items whose page shows a banner right now (others are
+// logged as "no banner" and left alone), for clearing banners out of older screenshots.
+//
 // Run:  node scripts/capture-showcase.ts --out tmp/showcase-thumbs/batch-1 --limit 500
 // Then: node scripts/cdn-sync.ts --add <out> (uploads to Cloudflare Pages; files land at
 // img/<id>.webp) and scripts/showcase-thumbs-sql.ts. scripts/capture-showcase.sh does all three.
@@ -16,6 +20,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from
 import { join } from "node:path";
 import { chromium, type BrowserContext } from "playwright";
 import sharp from "sharp";
+import { blockConsent, hideBanners } from "./consent.ts";
 
 type Item = { id: string; url: string };
 
@@ -38,7 +43,8 @@ const limit = Number(arg("limit", "500"));
 const workers = Number(arg("workers", "6"));
 // Retakes: --ids <file> (one item id per line) recaptures those items even if tried before, and
 // --wait <ms> gives slow intros and loaders longer to finish (default 2.5 s).
-const idsFile = arg("ids", "");
+const bannersOnly = process.argv.includes("--banners");
+const idsFile = arg("ids", "") || arg("banners", "");
 const settle = Number(arg("wait", "2500"));
 // --shot <ms> gives heavy pages longer to paint the 2x screenshot (default 15 s).
 const shotTimeout = Number(arg("shot", "15000"));
@@ -48,7 +54,7 @@ const width = Number(arg("width", "1280"));
 const quality = Number(arg("quality", "72"));
 // Retakes are saved under img/r/ so the new file gets a new address (the old one is cached for a year).
 // --prefix <folder> picks another one, e.g. --prefix v2 for the sharper recapture (img/v2/).
-const prefix = arg("prefix", idsFile ? "r" : "");
+const prefix = arg("prefix", bannersOnly ? "c" : idsFile ? "r" : "");
 const imgDir = join(out, "img", prefix);
 mkdirSync(imgDir, { recursive: true });
 
@@ -88,12 +94,6 @@ for (let from = 0; !idsFile && items.length < limit; from += 1000) {
 items.splice(limit);
 console.error(`${items.length} to capture in ${out}`);
 
-// Cookie and consent banners are hidden (not clicked) so they don't cover the page.
-const HIDE_BANNERS = `
-  #onetrust-banner-sdk, #onetrust-consent-sdk, #CybotCookiebotDialog, #usercentrics-root, .cc-window,
-  .cookie-banner, .cookie-consent, .cookie-notice, #cookie-banner, #cookie-notice, #cookie-law-info-bar,
-  .cky-consent-container, #didomi-host, .qc-cmp2-container, #truste-consent-track, [aria-label*="cookie" i][role="dialog"],
-  [class*="CookieBanner"], [id*="cookie-consent"] { display: none !important; }`;
 // Lapsed domains that now show a parking page, a host's placeholder or spam.
 const PARKED =
   /domain (is|may be) for sale|buy this domain|this domain (has expired|is parked)|parked free|hostinger|godaddy|account (has been )?suspended|website is (almost )?ready|casino|index of \//i;
@@ -103,7 +103,11 @@ const NETWORK_BLOCK = /situs diblokir|internet ?positif|trustpositif|aduankonten
 const BLOCKED_HERE = "blocked on this network";
 const BOT_CHECK = /security verification|just a moment|verify you are human|checking your browser|attention required|access denied|captcha/i;
 
-async function capture(context: BrowserContext, item: Item): Promise<string | null> {
+const NO_BANNER = "no banner";
+
+async function capture(context: BrowserContext, item: Item): Promise<{ failure: string | null; banners: number }> {
+  let banners = 0;
+  const fail = (failure: string | null) => ({ failure, banners });
   const page = await context.newPage();
   try {
     const response = await page.goto(item.url, { waitUntil: "load", timeout: 30_000 }).catch(async (error) => {
@@ -111,22 +115,24 @@ async function capture(context: BrowserContext, item: Item): Promise<string | nu
       if (!/Timeout/.test(String(error))) throw error;
       return null;
     });
-    if (response && response.status() >= 400) return `status ${response.status()}`;
-    await page.addStyleTag({ content: HIDE_BANNERS }).catch(() => {});
+    if (response && response.status() >= 400) return fail(`status ${response.status()}`);
     await page.waitForTimeout(settle);
+    if (bannersOnly && !(await hideBanners(page, false))) return fail(NO_BANNER);
+    banners = await hideBanners(page);
+    if (banners) await page.waitForTimeout(400);
     const title = await page.title().catch(() => "");
     const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
-    if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return "bot check page";
-    if (PARKED.test(title) || PARKED.test(text)) return "parked or replaced domain";
-    if (NETWORK_BLOCK.test(title) || NETWORK_BLOCK.test(text)) return BLOCKED_HERE;
+    if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return fail("bot check page");
+    if (PARKED.test(title) || PARKED.test(text)) return fail("parked or replaced domain");
+    if (NETWORK_BLOCK.test(title) || NETWORK_BLOCK.test(text)) return fail(BLOCKED_HERE);
     const shot = await page.screenshot({ type: "png", timeout: shotTimeout });
     const stats = await sharp(shot).stats();
-    if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return "blank screen";
+    if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return fail("blank screen");
     // smartSubsample keeps small coloured text from smearing.
     await sharp(shot).resize({ width }).webp({ quality, smartSubsample: true, effort: 5 }).toFile(join(imgDir, `${item.id}.webp`));
-    return null;
+    return fail(null);
   } catch (error) {
-    return (error as Error).message.split("\n")[0].slice(0, 120);
+    return fail((error as Error).message.split("\n")[0].slice(0, 120));
   } finally {
     await page.close().catch(() => {});
   }
@@ -140,6 +146,8 @@ const context = await browser.newContext({
   locale: "en-US",
 });
 context.setDefaultNavigationTimeout(30_000);
+// A retake for banners leaves the consent platform running, so the banner shows and is found.
+if (!bannersOnly) await blockConsent(context);
 
 let next = 0;
 let done = 0;
@@ -149,12 +157,14 @@ await Promise.all(
       const item = items[next++];
       // A page that never settles (a hung renderer, an endless dialog) mustn't stall the run.
       let timer: ReturnType<typeof setTimeout> | undefined;
-      const failure = await Promise.race([
+      const { failure, banners } = await Promise.race([
         capture(context, item),
-        new Promise<string>((resolve) => (timer = setTimeout(() => resolve(`gave up after ${giveUp / 1000} s`), giveUp))),
+        new Promise<{ failure: string; banners: number }>(
+          (resolve) => (timer = setTimeout(() => resolve({ failure: `gave up after ${giveUp / 1000} s`, banners: 0 }), giveUp)),
+        ),
       ]);
       clearTimeout(timer);
-      appendFileSync(join(out, "results.ndjson"), JSON.stringify({ id: item.id, ok: !failure, reason: failure }) + "\n");
+      appendFileSync(join(out, "results.ndjson"), JSON.stringify({ id: item.id, ok: !failure, reason: failure, banners }) + "\n");
       done++;
       if (done % 25 === 0 || done === items.length) console.error(`${done}/${items.length}`);
     }

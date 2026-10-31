@@ -14,8 +14,9 @@ const results = readFileSync(join(dir, "results.ndjson"), "utf8")
   .split("\n")
   .filter(Boolean)
   .map((line) => JSON.parse(line) as { id: string; ok: boolean; reason?: string | null })
-  // Blocked by the capturing machine's network: not a verdict on the site, so left unchecked.
-  .filter((r) => r.reason !== "blocked on this network");
+  // Blocked by the capturing machine's network: not a verdict on the site, so left unchecked. And
+  // banner retakes (capture-showcase.ts --banners) that found no banner leave the item as it was.
+  .filter((r) => r.reason !== "blocked on this network" && r.reason !== "no banner");
 const ids = (ok: boolean) => results.filter((r) => r.ok === ok).map((r) => `'${r.id.replace(/[^0-9a-f-]/g, "")}'`);
 
 const captured = ids(true);

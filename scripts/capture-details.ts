@@ -9,7 +9,7 @@
 // under img/details/<folder>/ so the new files get new addresses (old ones are cached for a year).
 // Same rules as capture-showcase.ts: only the
 // sites' own pages are visited, and bot checks, errors and blank screens are skipped, never
-// worked around.
+// worked around. Cookie banners are kept out the same way too (scripts/consent.ts).
 //
 // Run:  node scripts/capture-details.ts --out tmp/showcase-details/batch-1 --limit 200
 // Then: node scripts/cdn-sync.ts --add <out> (uploads to Cloudflare Pages) and
@@ -19,6 +19,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from
 import { join } from "node:path";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import sharp from "sharp";
+import { blockConsent, hideBanners } from "./consent.ts";
 
 type Item = { id: string; url: string };
 export type DetailPage = { path: string; url: string; title: string };
@@ -82,11 +83,6 @@ for (let from = 0; !idsFile && items.length < limit; from += 1000) {
 items.splice(limit);
 console.error(`${items.length} to capture in ${out}`);
 
-const HIDE_BANNERS = `
-  #onetrust-banner-sdk, #onetrust-consent-sdk, #CybotCookiebotDialog, #usercentrics-root, .cc-window,
-  .cookie-banner, .cookie-consent, .cookie-notice, #cookie-banner, #cookie-notice, #cookie-law-info-bar,
-  .cky-consent-container, #didomi-host, .qc-cmp2-container, #truste-consent-track, [aria-label*="cookie" i][role="dialog"],
-  [class*="CookieBanner"], [id*="cookie-consent"] { display: none !important; }`;
 const BOT_CHECK = /security verification|just a moment|verify you are human|checking your browser|attention required|access denied|captcha/i;
 const NETWORK_BLOCK = /situs diblokir|internet ?positif|trustpositif|aduankonten/i;
 // Lapsed domains now parked or taken over by spam. These get flagged for an editor
@@ -106,8 +102,8 @@ async function open(page: Page, url: string): Promise<string | null> {
     return null;
   });
   if (response && response.status() >= 400) return `status ${response.status()}`;
-  await page.addStyleTag({ content: HIDE_BANNERS }).catch(() => {});
   await page.waitForTimeout(2000);
+  if (await hideBanners(page)) await page.waitForTimeout(400);
   const title = await page.title().catch(() => "");
   const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
   if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return "bot check page";
@@ -205,6 +201,7 @@ const context = await browser.newContext({
   locale: "en-US",
 });
 context.setDefaultNavigationTimeout(30_000);
+await blockConsent(context);
 
 mkdirSync(join(out, "img"), { recursive: true });
 let next = 0;

@@ -306,3 +306,13 @@ _(ideas and out-of-scope items noted during sessions)_
   inner pages 1280px) under img/details/v2/, uploaded to Cloudflare before being recorded. 86 keep
   their old captures (timeouts, blank screens, 402/403). Old detail files pruned from the mirror and
   Pages; cdn/ is 1.1 GB (details 585 MB, thumbs 440 MB) and Supabase storage stays empty. Back up cdn/.
+- Audit leftovers fixed: the first 5 cards load their pictures right away (eager, high priority); card
+  gallery links are out of the Tab order (the detail panel lists them), so a page of cards is ~160 Tab
+  stops instead of ~350; reduced motion now turns slides, zooms and spins into fades (the detail
+  panel fades in) instead of stopping all motion. 4 Everything sites now on suspended or parked
+  domains (N.E.R.D, Think Blink, Create Pilates, I AM SACHA) moved to the Archive.
+- Cookie banners: `scripts/consent.ts` blocks the common consent platforms (OneTrust, Cookiebot,
+  Usercentrics, Didomi, CookieYes, WordPress plugins…) and removes leftover fixed boxes that ask
+  about cookies, with their backdrop and scroll lock; nothing is clicked or accepted. Both capture
+  scripts use it. `capture-showcase.ts --banners <ids>` retakes only sites showing a banner now
+  (img/c/); a 60-site sample found 8 (~13%). Full clean-up of all 10,849 live sites running.
