@@ -2,6 +2,7 @@
 
 import { ChevronDown, Search, Sparkles } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { amEditor } from "@/app/curate/actions";
 import { EditorTools } from "@/app/curate/editor-tools";
@@ -125,9 +126,10 @@ function CategoryChips({ value, onChange, counts }: { value: string; onChange: (
 function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; editor: boolean; onHidden: () => void }) {
   const href = e.url ?? e.featured[0]?.sourceUrl;
   const picture = (
-    // The picture opens the site's detail page; the name below goes straight to the live site.
-    <a
+    // The picture opens the site's detail panel over the list; the name below goes straight to the live site.
+    <Link
       href={`/site/${e.id}`}
+      scroll={false}
       aria-label={`${e.name}: full page and inner pages`}
       className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted"
     >
@@ -147,7 +149,7 @@ function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; ed
           {e.name}
         </span>
       )}
-    </a>
+    </Link>
   );
   return (
     <li className="flex min-w-0 flex-col gap-2.5">

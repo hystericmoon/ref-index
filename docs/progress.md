@@ -298,3 +298,7 @@ _(ideas and out-of-scope items noted during sessions)_
   and are rendered on the server, so Back, reload and shared links keep them. The detail page's
   "All sites" link steps back when you came from the directory, so the scroll position comes back too.
   Pages loaded with "Load more" are not restored (only the first 60).
+- Site detail opens as a panel that slides up over the list (after Awwwards): an intercepting route
+  `@modal/(.)site/[id]` with a Radix dialog (`detail-sheet.tsx`). ×, Esc, the backdrop and Back close
+  it and leave the list exactly as it was. A direct link or reload still shows the full page;
+  the panel's expand button opens that full page. Shared content lives in `site/[id]/site-detail.tsx`.
