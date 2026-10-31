@@ -1,10 +1,13 @@
 // Detail captures for showcase items: a full-page screenshot of the home page plus the first
-// screen of up to three inner pages linked from it (work, about, pricing and the like). Saves
-// 960px-wide WebPs to <out>/img/details/<item id>/{full,page-1,page-2,page-3}.webp and every
-// outcome to <out>/results.ndjson, so a rerun resumes.
+// screen of up to three inner pages linked from it (work, about, pricing and the like), rendered
+// at 2x like a retina screen. Saves WebPs to <out>/img/details/<item id>/{full,page-1,page-2,page-3}.webp
+// (the full page 2048px wide, since the detail page shows it up to 1,024 CSS px; inner pages 1280px)
+// and every outcome to <out>/results.ndjson, so a rerun resumes.
 //
-// Only Top picks (staff picks, or featured on 2+ galleries) with a home screenshot are captured,
-// to keep the bucket inside the free storage tier. Same rules as capture-showcase.ts: only the
+// Only Top picks (staff picks, or featured on 2+ galleries) with a home screenshot are captured.
+// Retakes: --ids <file> recaptures those items even if done before, and --prefix <folder> saves
+// under img/details/<folder>/ so the new files get new addresses (old ones are cached for a year).
+// Same rules as capture-showcase.ts: only the
 // sites' own pages are visited, and bot checks, errors and blank screens are skipped, never
 // worked around.
 //
@@ -38,6 +41,10 @@ function arg(name: string, fallback: string): string {
 const out = arg("out", "tmp/showcase-details/batch");
 const limit = Number(arg("limit", "200"));
 const workers = Number(arg("workers", "8"));
+const idsFile = arg("ids", "");
+const prefix = arg("prefix", "");
+const FULL_WIDTH = 2048;
+const PAGE_WIDTH = 1280;
 
 const root = join(out, "..");
 mkdirSync(root, { recursive: true });
@@ -51,7 +58,18 @@ for (const dir of readdirSync(root)) {
 const supabaseUrl = env("NEXT_PUBLIC_SUPABASE_URL");
 const key = env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
 const items: Item[] = [];
-for (let from = 0; items.length < limit; from += 1000) {
+if (idsFile) {
+  // Retakes go in their own folder tree (e.g. tmp/showcase-details-v2), so "tried" means retaken.
+  const ids = readFileSync(idsFile, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => /^[0-9a-f-]{36}$/.test(l) && !tried.has(l));
+  for (let i = 0; i < ids.length && items.length < limit; i += 100) {
+    const response = await fetch(`${supabaseUrl}/rest/v1/showcase_items?select=id,url&url=not.is.null&id=in.(${ids.slice(i, i + 100).join(",")})`, {
+      headers: { apikey: key },
+    });
+    if (!response.ok) throw new Error(`Couldn't read showcase items: ${response.status}`);
+    items.push(...((await response.json()) as Item[]).filter((it) => /^https?:\/\//.test(it.url)));
+  }
+}
+for (let from = 0; !idsFile && items.length < limit; from += 1000) {
   const response = await fetch(
     `${supabaseUrl}/rest/v1/showcase_items?select=id,url&status=eq.listed&thumb_path=not.is.null&details_checked_at=is.null&or=(staff_pick.is.true,gallery_count.gte.2)&order=staff_pick.desc,gallery_count.desc,id`,
     { headers: { apikey: key, range: `${from}-${from + 999}` } },
@@ -98,18 +116,19 @@ async function open(page: Page, url: string): Promise<string | null> {
   return null;
 }
 
-async function save(png: Buffer, file: string): Promise<boolean> {
-  const stats = await sharp(png).stats();
+async function save(png: Buffer, file: string, width: number): Promise<boolean> {
+  const stats = await sharp(png, { limitInputPixels: false }).stats();
   if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return false;
   mkdirSync(join(file, ".."), { recursive: true });
-  await sharp(png, { limitInputPixels: false }).resize({ width: 960 }).webp({ quality: 60 }).toFile(file);
+  // smartSubsample keeps small coloured text from smearing.
+  await sharp(png, { limitInputPixels: false }).resize({ width }).webp({ quality: 70, smartSubsample: true, effort: 5 }).toFile(file);
   return true;
 }
 
 async function capture(context: BrowserContext, item: Item): Promise<DetailResult> {
   const page = await context.newPage();
-  const dir = join(out, "img", "details", item.id);
-  const rel = (name: string) => `img/details/${item.id}/${name}.webp`;
+  const dir = join(out, "img", "details", prefix, item.id);
+  const rel = (name: string) => `img/details/${prefix ? `${prefix}/` : ""}${item.id}/${name}.webp`;
   try {
     const failure = await open(page, item.url);
     if (failure) return { id: item.id, ok: false, reason: failure };
@@ -125,8 +144,8 @@ async function capture(context: BrowserContext, item: Item): Promise<DetailResul
       await new Promise((r) => setTimeout(r, 600));
       return Math.min(document.documentElement.scrollHeight, max);
     }, MAX_HEIGHT);
-    const full = await page.screenshot({ type: "png", fullPage: height > 800, clip: height > 800 ? { x: 0, y: 0, width: 1280, height } : undefined, timeout: 30_000 });
-    if (!(await save(full, join(dir, "full.webp")))) return { id: item.id, ok: false, reason: "blank screen" };
+    const full = await page.screenshot({ type: "png", fullPage: height > 800, clip: height > 800 ? { x: 0, y: 0, width: 1280, height } : undefined, timeout: 60_000 });
+    if (!(await save(full, join(dir, "full.webp"), FULL_WIDTH))) return { id: item.id, ok: false, reason: "blank screen" };
 
     // Inner pages: same-site links, header and nav first, one per first path segment.
     const home = new URL(page.url());
@@ -159,9 +178,9 @@ async function capture(context: BrowserContext, item: Item): Promise<DetailResul
       const inner = await context.newPage();
       try {
         if (await open(inner, c.href)) continue;
-        const shot = await inner.screenshot({ type: "png", timeout: 15_000 });
+        const shot = await inner.screenshot({ type: "png", timeout: 30_000 });
         const name = `page-${pages.length + 1}`;
-        if (!(await save(shot, join(dir, `${name}.webp`)))) continue;
+        if (!(await save(shot, join(dir, `${name}.webp`), PAGE_WIDTH))) continue;
         const title = (await inner.title().catch(() => "")) || c.text;
         pages.push({ path: rel(name), url: inner.url(), title: title.replace(/\s+/g, " ").trim().slice(0, 120) });
       } catch {
@@ -181,7 +200,7 @@ async function capture(context: BrowserContext, item: Item): Promise<DetailResul
 const browser = await chromium.launch({ args: ["--mute-audio"] });
 const context = await browser.newContext({
   viewport: { width: 1280, height: 800 },
-  deviceScaleFactor: 1,
+  deviceScaleFactor: 2,
   reducedMotion: "reduce",
   locale: "en-US",
 });
@@ -197,7 +216,7 @@ await Promise.all(
       let timer: ReturnType<typeof setTimeout> | undefined;
       const result = await Promise.race([
         capture(context, item),
-        new Promise<DetailResult>((resolve) => (timer = setTimeout(() => resolve({ id: item.id, ok: false, reason: "gave up after 150 s" }), 150_000))),
+        new Promise<DetailResult>((resolve) => (timer = setTimeout(() => resolve({ id: item.id, ok: false, reason: "gave up after 240 s" }), 240_000))),
       ]);
       clearTimeout(timer);
       appendFileSync(join(out, "results.ndjson"), JSON.stringify(result) + "\n");

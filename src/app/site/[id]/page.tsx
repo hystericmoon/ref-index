@@ -101,7 +101,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
               <li key={p.imageUrl} className="flex min-w-0 flex-col gap-2">
                 <a href={p.url} target="_blank" rel="noopener" className="group flex flex-col gap-2">
                   <span className="block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted">
-                    <Image src={p.imageUrl} alt="" width={960} height={600} unoptimized className="size-full object-cover object-top" />
+                    <Image src={p.imageUrl} alt="" width={1280} height={800} unoptimized className="size-full object-cover object-top" />
                   </span>
                   <span className="truncate px-1 text-sm font-medium group-hover:underline">
                     {p.title || hostOf(p.url)}
@@ -123,8 +123,8 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
             <Image
               src={d.full}
               alt={`The full home page of ${item.name}, captured from the live site.`}
-              width={960}
-              height={Math.round(d.fullHeight * 0.75)}
+              width={1280}
+              height={d.fullHeight}
               unoptimized
               className="h-auto w-full"
             />
