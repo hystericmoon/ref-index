@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Sparkles } from "lucide-react";
+import { ChevronDown, Search, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { amEditor } from "@/app/curate/actions";
@@ -276,18 +276,21 @@ function ShowcaseView({
         />
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Featured on
-          <select
-            value={gallery}
-            onChange={(e) => setGallery(e.target.value)}
-            className="min-h-11 rounded-full border bg-card px-3 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9"
-          >
-            <option value="">All galleries</option>
-            {galleries.map(([g, n]) => (
-              <option key={g} value={g}>
-                {g} ({n})
-              </option>
-            ))}
-          </select>
+          <span className="relative flex items-center">
+            <select
+              value={gallery}
+              onChange={(e) => setGallery(e.target.value)}
+              className="min-h-11 cursor-pointer appearance-none rounded-full border bg-card pr-9 pl-4 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9"
+            >
+              <option value="">All galleries</option>
+              {galleries.map(([g, n]) => (
+                <option key={g} value={g}>
+                  {g} ({n})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3.5 size-4 text-muted-foreground" aria-hidden="true" />
+          </span>
         </label>
       </div>
       <CategoryChips
