@@ -11,6 +11,8 @@ import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation } from "@/
 
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
 
+type Filters = { view: Curation; q: string; category: string; gallery: string };
+
 function hostOf(url: string | null) {
   if (!url) return "";
   try {
@@ -20,16 +22,18 @@ function hostOf(url: string | null) {
   }
 }
 
-/** Keep the search term in the URL so a link reproduces what you see. */
-function useUrlState(q: string) {
+/** Keep the filters in the URL so a link, a reload or the Back button reproduces what you see. */
+function useUrlState({ view, q, category, gallery }: Filters) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    params.delete("view");
-    if (q.trim()) params.set("q", q.trim());
-    else params.delete("q");
+    const set = (k: string, v: string) => (v ? params.set(k, v) : params.delete(k));
+    set("view", view === "top" ? "" : view);
+    set("q", q.trim());
+    set("category", category);
+    set("gallery", gallery);
     const search = params.toString();
-    window.history.replaceState(null, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
-  }, [q]);
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
+  }, [view, q, category, gallery]);
 }
 
 function SearchField({
@@ -212,24 +216,26 @@ function ShowcaseView({
   counts,
   categoryCounts,
   galleries,
-  initialQuery,
+  initialFilters,
+  initialTotal,
 }: {
   initial: ShowcaseEntry[];
   counts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
   galleries: [string, number][];
-  initialQuery: string;
+  initialFilters: Filters;
+  initialTotal: number;
 }) {
-  // Filtering and paging run in the database; the page ships the first 60 top picks.
-  const [curation, setCuration] = useState<Curation>("top");
+  // Filtering and paging run in the database; the page ships the first 60 matches for the URL's filters.
+  const [curation, setCuration] = useState<Curation>(initialFilters.view);
   const total = counts[curation];
   const [entries, setEntries] = useState(initial);
-  const [matchTotal, setMatchTotal] = useState(total);
+  const [matchTotal, setMatchTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
-  const [q, setQ] = useState(initialQuery);
-  useUrlState(q);
-  const [category, setCategory] = useState("");
-  const [gallery, setGallery] = useState("");
+  const [q, setQ] = useState(initialFilters.q);
+  const [category, setCategory] = useState(initialFilters.category);
+  const [gallery, setGallery] = useState(initialFilters.gallery);
+  useUrlState({ view: curation, q, category, gallery });
   const firstRender = useRef(true);
   const request = useRef(0);
   // Editors get curation tools on each card; everyone else sees the plain page.
@@ -258,7 +264,7 @@ function ShowcaseView({
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
-      if (!q.trim()) return;
+      return;
     }
     const timer = window.setTimeout(() => load(0), 250);
     return () => window.clearTimeout(timer);
@@ -374,13 +380,24 @@ export function Directory({
   viewCounts,
   categoryCounts,
   galleryCounts,
-  initialQuery,
+  initialFilters,
+  initialTotal,
 }: {
   showcase: ShowcaseEntry[];
   viewCounts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
   galleryCounts: [string, number][];
-  initialQuery: string;
+  initialFilters: Filters;
+  initialTotal: number;
 }) {
-  return <ShowcaseView initial={showcase} counts={viewCounts} categoryCounts={categoryCounts} galleries={galleryCounts} initialQuery={initialQuery} />;
+  return (
+    <ShowcaseView
+      initial={showcase}
+      counts={viewCounts}
+      categoryCounts={categoryCounts}
+      galleries={galleryCounts}
+      initialFilters={initialFilters}
+      initialTotal={initialTotal}
+    />
+  );
 }

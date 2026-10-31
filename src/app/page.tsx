@@ -1,6 +1,7 @@
 import { HeroDecor } from "@/components/hero-decor";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/brand";
-import { getCategoryCounts, getViewCounts, listGalleryCounts, searchShowcase } from "@/lib/db/showcase";
+import { CATEGORY_IDS } from "@/lib/categories";
+import { SHOWCASE_VIEWS, getCategoryCounts, getViewCounts, listGalleryCounts, searchShowcase, type ShowcaseView } from "@/lib/db/showcase";
 import { listSources } from "@/lib/db/sources";
 import { createPublicClient } from "@/lib/supabase/public";
 import { Directory } from "./directory";
@@ -14,15 +15,22 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const db = createPublicClient();
-  const [params, sources, showcase, galleryCounts, viewCounts, categoryCounts] = await Promise.all([
-    searchParams,
+  // Filters live in the URL, so a shared link or the Back button shows the same results.
+  const params = await searchParams;
+  const one = (k: string) => (typeof params[k] === "string" ? params[k] : "");
+  const filters = {
+    q: one("q").slice(0, 100),
+    view: SHOWCASE_VIEWS.includes(one("view") as ShowcaseView) ? (one("view") as ShowcaseView) : "top",
+    category: CATEGORY_IDS.has(one("category")) ? one("category") : "",
+    gallery: one("gallery").slice(0, 60),
+  };
+  const [sources, showcase, galleryCounts, viewCounts, categoryCounts] = await Promise.all([
     listSources(db),
-    searchShowcase(db, { limit: FIRST_SCREEN, view: "top" }),
+    searchShowcase(db, { ...filters, limit: FIRST_SCREEN }),
     listGalleryCounts(db),
     getViewCounts(db),
     getCategoryCounts(db),
   ]);
-  const q = typeof params.q === "string" ? params.q.slice(0, 100) : "";
   // The galleries the showcase is collected from, credited and linked at the foot of the page.
   const featured = new Set(galleryCounts.map(([g]) => g));
   const galleries = sources.filter((s) => featured.has(s.name)).sort((a, b) => a.name.localeCompare(b.name));
@@ -46,7 +54,8 @@ export default async function Home({
         viewCounts={viewCounts}
         categoryCounts={categoryCounts}
         galleryCounts={galleryCounts}
-        initialQuery={q}
+        initialFilters={filters}
+        initialTotal={showcase.total}
       />
       <footer className="flex flex-col gap-2 border-t pt-4 text-sm text-muted-foreground">
         <h2 className="font-medium text-foreground">The galleries</h2>

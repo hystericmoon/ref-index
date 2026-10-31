@@ -294,3 +294,7 @@ _(ideas and out-of-scope items noted during sessions)_
   links are 44px tall on phones. The search placeholder is shorter and 16px on phones, and the hero gap is smaller.
   Still open: about 350 Tab stops on a page of cards, the top row of pictures loads lazily, and the
   global reduced-motion rule kills all motion.
+- Directory filters (Top picks/Everything/Archive, category, gallery, search) now live in the URL
+  and are rendered on the server, so Back, reload and shared links keep them. The detail page's
+  "All sites" link steps back when you came from the directory, so the scroll position comes back too.
+  Pages loaded with "Load more" are not restored (only the first 60).

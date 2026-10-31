@@ -1,12 +1,12 @@
-import { ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { getShowcaseItem } from "@/lib/db/showcase";
 import { createPublicClient } from "@/lib/supabase/public";
+import { BackLink } from "./back-link";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
@@ -42,9 +42,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="mx-auto flex w-full max-w-[100rem] flex-col gap-8 px-4 py-8 sm:px-6 sm:py-12 lg:px-10">
-      <Link href="/" className="inline-flex min-h-11 w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="size-4" aria-hidden="true" /> All sites
-      </Link>
+      <BackLink />
 
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
