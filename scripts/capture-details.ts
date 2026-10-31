@@ -103,7 +103,7 @@ async function open(page: Page, url: string): Promise<string | null> {
   });
   if (response && response.status() >= 400) return `status ${response.status()}`;
   await page.waitForTimeout(2000);
-  if (await hideBanners(page)) await page.waitForTimeout(400);
+  if ((await hideBanners(page)).length) await page.waitForTimeout(400);
   const title = await page.title().catch(() => "");
   const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
   if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return "bot check page";

@@ -31,11 +31,14 @@ const BANNER_SELECTORS = [
   "[class*='CookieBanner']", "[class*='cookie-banner']", "[id*='cookie-consent']", "[id*='cookie-banner']",
 ].join(",");
 
+export type Box = { x: number; y: number; width: number; height: number };
+
 /**
- * Removes cookie banners from the page. Returns how many it removed, so a run can tell which
- * captures had one. With remove false it only counts them (to find old captures that show one).
+ * Removes cookie banners from the page. Returns where each one sat on screen (CSS pixels), so a run
+ * can tell which captures had one and leave that area out when comparing pictures. With remove
+ * false it only finds them (to spot old captures that show one).
  */
-export async function hideBanners(page: Page, remove = true): Promise<number> {
+export async function hideBanners(page: Page, remove = true): Promise<Box[]> {
   return page
     .evaluate(
       ({ selectors, remove }) => {
@@ -63,7 +66,12 @@ export async function hideBanners(page: Page, remove = true): Promise<number> {
           if (!consentFrame && (text.length > 1500 || !words.test(text) || !answer.test(text) || !el.querySelector("button, a, [role='button']"))) continue;
           if (onScreen(el)) found.add(el);
         }
-        if (!found.size || !remove) return found.size;
+        const boxes = [...found].map((el) => {
+          const r = el.getBoundingClientRect();
+          const x = Math.max(0, r.left), y = Math.max(0, r.top);
+          return { x, y, width: Math.min(vw, r.right) - x, height: Math.min(vh, r.bottom) - y };
+        });
+        if (!found.size || !remove) return boxes;
         for (const el of found) el.remove();
         // The dimmed backdrop some banners add: a plain, see-through fixed layer over most of the screen.
         for (const el of document.body.querySelectorAll("*")) {
@@ -79,9 +87,9 @@ export async function hideBanners(page: Page, remove = true): Promise<number> {
             el.style.setProperty("overflow", "visible", "important");
           }
         }
-        return found.size;
+        return boxes;
       },
       { selectors: BANNER_SELECTORS, remove },
     )
-    .catch(() => 0);
+    .catch(() => []);
 }

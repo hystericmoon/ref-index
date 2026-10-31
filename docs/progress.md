@@ -315,4 +315,6 @@ _(ideas and out-of-scope items noted during sessions)_
   Usercentrics, Didomi, CookieYes, WordPress plugins…) and removes leftover fixed boxes that ask
   about cookies, with their backdrop and scroll lock; nothing is clicked or accepted. Both capture
   scripts use it. `capture-showcase.ts --banners <ids>` retakes only sites showing a banner now
-  (img/c/); a 60-site sample found 8 (~13%). Full clean-up of all 10,849 live sites running.
+  (img/c2/, after a 6 s wait); a 60-site sample found 8 (~13%). A retake that shows much less
+  than the old screenshot outside the banner's area (an intro or loader) is set aside under
+  <batch>/rejected/ and the old one kept. Full clean-up of all 10,849 live sites running.

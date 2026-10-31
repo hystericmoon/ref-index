@@ -16,13 +16,13 @@
 // Needs NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in .env.local
 // (showcase items are publicly readable).
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium, type BrowserContext } from "playwright";
 import sharp from "sharp";
-import { blockConsent, hideBanners } from "./consent.ts";
+import { blockConsent, hideBanners, type Box } from "./consent.ts";
 
-type Item = { id: string; url: string };
+type Item = { id: string; url: string; thumb_path?: string | null };
 
 function env(name: string): string {
   const line = readFileSync(".env.local", "utf8")
@@ -74,11 +74,12 @@ if (idsFile) {
   // Retakes go in their own folder tree (e.g. tmp/showcase-retakes), so "tried" means retaken.
   const ids = readFileSync(idsFile, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => /^[0-9a-f-]{36}$/.test(l) && !tried.has(l));
   for (let i = 0; i < ids.length && items.length < limit; i += 100) {
-    const response = await fetch(`${supabaseUrl}/rest/v1/showcase_items?select=id,url&url=not.is.null&id=in.(${ids.slice(i, i + 100).join(",")})`, {
+    const response = await fetch(`${supabaseUrl}/rest/v1/showcase_items?select=id,url,thumb_path&url=not.is.null&id=in.(${ids.slice(i, i + 100).join(",")})`, {
       headers: { apikey: key },
     });
     if (!response.ok) throw new Error(`Couldn't read showcase items: ${response.status}`);
-    items.push(...((await response.json()) as Item[]).filter((it) => /^https?:\/\//.test(it.url)));
+    // A banner retake only replaces a screenshot that exists (archived sites have none).
+    items.push(...((await response.json()) as Item[]).filter((it) => /^https?:\/\//.test(it.url) && (!bannersOnly || it.thumb_path)));
   }
 }
 for (let from = 0; !idsFile && items.length < limit; from += 1000) {
@@ -105,6 +106,18 @@ const BOT_CHECK = /security verification|just a moment|verify you are human|chec
 
 const NO_BANNER = "no banner";
 
+/** How much a screenshot shows (entropy at 320×200) with the given 1280×800 boxes blacked out. */
+async function outsideBanners(image: Buffer, boxes: Box[]): Promise<number> {
+  const scale = 320 / 1280;
+  const rects = boxes.map((b) => `<rect x="${b.x * scale}" y="${b.y * scale}" width="${b.width * scale}" height="${b.height * scale}"/>`).join("");
+  const masked = await sharp(image)
+    .resize(320, 200, { fit: "cover", position: "top" })
+    .composite([{ input: Buffer.from(`<svg width="320" height="200">${rects}</svg>`), top: 0, left: 0 }])
+    .png()
+    .toBuffer();
+  return (await sharp(masked).stats()).entropy;
+}
+
 async function capture(context: BrowserContext, item: Item): Promise<{ failure: string | null; banners: number }> {
   let banners = 0;
   const fail = (failure: string | null) => ({ failure, banners });
@@ -117,8 +130,9 @@ async function capture(context: BrowserContext, item: Item): Promise<{ failure: 
     });
     if (response && response.status() >= 400) return fail(`status ${response.status()}`);
     await page.waitForTimeout(settle);
-    if (bannersOnly && !(await hideBanners(page, false))) return fail(NO_BANNER);
-    banners = await hideBanners(page);
+    if (bannersOnly && !(await hideBanners(page, false)).length) return fail(NO_BANNER);
+    const boxes = await hideBanners(page);
+    banners = boxes.length;
     if (banners) await page.waitForTimeout(400);
     const title = await page.title().catch(() => "");
     const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
@@ -129,7 +143,23 @@ async function capture(context: BrowserContext, item: Item): Promise<{ failure: 
     const stats = await sharp(shot).stats();
     if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return fail("blank screen");
     // smartSubsample keeps small coloured text from smearing.
-    await sharp(shot).resize({ width }).webp({ quality, smartSubsample: true, effort: 5 }).toFile(join(imgDir, `${item.id}.webp`));
+    const webp = await sharp(shot).resize({ width }).webp({ quality, smartSubsample: true, effort: 5 }).toBuffer();
+    // A banner retake can catch an intro or loader the old screenshot had got past. If the rest of
+    // the screen (the banner's area is blacked out in both) shows much less than the old screenshot
+    // in the local mirror (cdn/openrefs-thumbs), the old one stays. Buffers, not paths: sharp keeps
+    // files open on Windows.
+    const old = join("cdn", "openrefs-thumbs", item.thumb_path ?? "");
+    if (bannersOnly && item.thumb_path && existsSync(old)) {
+      const [before, after] = await Promise.all([outsideBanners(readFileSync(old), boxes), outsideBanners(webp, boxes)]);
+      // (Near-empty pages, like a plain black screen, have nothing to lose.)
+      if (before > 0.5 && after < before * 0.8) {
+        // Kept aside, so a run's rejects can be looked over.
+        mkdirSync(join(out, "rejected"), { recursive: true });
+        writeFileSync(join(out, "rejected", `${item.id}.webp`), webp);
+        return fail(`retake looks emptier (${after.toFixed(1)} vs ${before.toFixed(1)})`);
+      }
+    }
+    writeFileSync(join(imgDir, `${item.id}.webp`), webp);
     return fail(null);
   } catch (error) {
     return fail((error as Error).message.split("\n")[0].slice(0, 120));
