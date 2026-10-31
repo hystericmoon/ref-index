@@ -29,7 +29,7 @@ export default async function Home({
 
   return (
     <main className="mx-auto flex w-full max-w-[100rem] flex-1 flex-col gap-10 px-4 pb-24 sm:px-6 lg:px-10">
-      <header className="relative isolate flex flex-col items-center gap-5 py-14 text-center sm:py-20">
+      <header className="relative isolate flex flex-col items-center gap-5 pt-14 pb-2 text-center sm:py-20">
         <HeroDecor />
         <p className="rounded-full border bg-card/80 px-3 py-1 font-mono text-xs text-muted-foreground backdrop-blur">
           <b className="font-medium text-foreground">{viewCounts.all.toLocaleString("en-US")}</b> sites ·{" "}

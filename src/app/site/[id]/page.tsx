@@ -70,7 +70,7 @@ export default async function SitePage({ params }: { params: Promise<{ id: strin
             {item.featured.map((f, i) => (
               <span key={f.gallery} className="flex items-center gap-1.5">
                 {i > 0 && <span aria-hidden="true">·</span>}
-                <a href={f.sourceUrl} target="_blank" rel="noopener" className="py-1 font-medium text-primary hover:underline">
+                <a href={f.sourceUrl} target="_blank" rel="noopener" className="py-1 font-medium text-link hover:underline">
                   {f.gallery}
                   <span className="sr-only"> (opens in a new tab)</span>
                 </a>

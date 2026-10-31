@@ -65,7 +65,7 @@ function SearchField({
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
-        className="h-12 min-w-0 flex-1 bg-transparent text-lg font-medium outline-none placeholder:text-muted-foreground"
+        className="h-12 min-w-0 flex-1 bg-transparent text-base font-medium outline-none placeholder:text-muted-foreground sm:text-lg"
       />
       {value && (
         <button
@@ -155,8 +155,13 @@ function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; ed
         picture
       )}
       <div className="flex flex-col gap-1 px-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <a href={href} target="_blank" rel="noopener" className="font-semibold tracking-tight break-words hover:underline focus-visible:underline">
+        <div className="flex items-center justify-between gap-3">
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener"
+            className="flex min-h-11 items-center font-semibold tracking-tight break-words hover:underline focus-visible:underline sm:min-h-0"
+          >
             {e.name}
             <span className="sr-only"> (opens in new tab)</span>
           </a>
@@ -177,7 +182,12 @@ function ShowcaseCard({ entry: e, editor, onHidden }: { entry: ShowcaseEntry; ed
           {e.featured.map((f, i) => (
             <span key={f.gallery} className="flex items-center gap-1.5">
               {i > 0 && <span aria-hidden="true">·</span>}
-              <a href={f.sourceUrl} target="_blank" rel="noopener" className="py-1 font-medium text-primary hover:underline">
+              <a
+                href={f.sourceUrl}
+                target="_blank"
+                rel="noopener"
+                className="inline-flex min-h-11 items-center font-medium text-link hover:underline sm:min-h-0 sm:py-1"
+              >
                 {f.gallery}
                 <span className="sr-only"> (opens {e.name} on {f.gallery} in a new tab)</span>
               </a>
@@ -259,7 +269,7 @@ function ShowcaseView({
 
   return (
     <div className="flex flex-col gap-5" aria-busy={loading}>
-      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search by name, domain, tag or gallery" busy={loading} />
+      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search sites, tags or galleries" busy={loading} />
       <div className="flex flex-col gap-5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-6 lg:gap-y-3">
         <LiquidSwitch
           label="Collection"

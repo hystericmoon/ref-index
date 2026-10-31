@@ -41,7 +41,7 @@ export function CategoryEditor({ item }: { item: { id: string; name: string; cat
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
-          className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 font-medium text-primary hover:underline sm:min-h-7"
+          className="inline-flex min-h-11 items-center gap-1 rounded-full px-2 font-medium text-link hover:underline sm:min-h-7"
         >
           <Pencil className="size-3" aria-hidden="true" /> {open ? "Done" : "Edit"}
           <span className="sr-only"> categories for {item.name}</span>

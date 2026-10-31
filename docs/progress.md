@@ -288,3 +288,9 @@ _(ideas and out-of-scope items noted during sessions)_
   recording. The site's fallback is the Pages address. All 17,174 used images checked on Pages. The
   bucket copies (21,761 files, 696 MB) are ready to delete with `bash tmp/empty-showcase-bucket.sh`
   (the owner runs it). cdn/ is now the only copy besides Pages: back it up.
+- Homepage audit fixes (impeccable audit, 15/20): the collection switch and gallery filter share
+  one row on desktop; the gallery dropdown has its own chevron. Dark-mode buttons use a darker blue
+  (white text 4.9:1, was 3.6:1), and blue text links use a new `--link` token. Card name and gallery
+  links are 44px tall on phones. The search placeholder is shorter and 16px on phones, and the hero gap is smaller.
+  Still open: about 350 Tab stops on a page of cards, the top row of pictures loads lazily, and the
+  global reduced-motion rule kills all motion.
