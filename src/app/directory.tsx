@@ -260,20 +260,20 @@ function ShowcaseView({
   return (
     <div className="flex flex-col gap-5" aria-busy={loading}>
       <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search by name, domain, tag or gallery" busy={loading} />
-      <LiquidSwitch
-        label="Collection"
-        value={curation}
-        onChange={setCuration}
-        options={(["top", "all", "archive"] as const).map((c) => ({
-          value: c,
-          label: (
-            <>
-              {CURATION_LABEL[c]} <span className="ml-1 hidden font-mono text-xs text-muted-foreground sm:inline">{counts[c].toLocaleString("en-US")}</span>
-            </>
-          ),
-        }))}
-      />
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-6 lg:gap-y-3">
+        <LiquidSwitch
+          label="Collection"
+          value={curation}
+          onChange={setCuration}
+          options={(["top", "all", "archive"] as const).map((c) => ({
+            value: c,
+            label: (
+              <>
+                {CURATION_LABEL[c]} <span className="ml-1 hidden font-mono text-xs text-muted-foreground sm:inline">{counts[c].toLocaleString("en-US")}</span>
+              </>
+            ),
+          }))}
+        />
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           Featured on
           <select
