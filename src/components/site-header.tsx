@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AccountMenu } from "@/components/account-menu";
+import { LazyAccountMenu } from "@/components/lazy";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
@@ -22,7 +22,7 @@ export async function SiteHeader() {
       <div className="flex items-center gap-1">
         <ThemeToggle />
         {user ? (
-          <AccountMenu email={user.email} editor={editor} />
+          <LazyAccountMenu email={user.email} editor={editor} />
         ) : (
           <Button asChild variant="ghost" className="h-11 px-4">
             <Link href="/sign-in">Sign in</Link>

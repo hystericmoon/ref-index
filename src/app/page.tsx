@@ -1,9 +1,8 @@
 import { HeroDecor } from "@/components/hero-decor";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/brand";
 import { CATEGORY_IDS } from "@/lib/categories";
-import { SHOWCASE_VIEWS, getCategoryCounts, getViewCounts, listGalleryCounts, searchShowcase, type ShowcaseView } from "@/lib/db/showcase";
-import { listSources } from "@/lib/db/sources";
-import { createPublicClient } from "@/lib/supabase/public";
+import { SHOWCASE_VIEWS, THUMBS, type ShowcaseView } from "@/lib/db/showcase";
+import { cachedDirectoryCounts, cachedShowcasePage } from "@/lib/db/showcase-cache";
 import { Directory } from "./directory";
 
 /** The HTML carries one screenful of top picks; search and paging go through /showcase.json. */
@@ -14,7 +13,6 @@ export default async function Home({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const db = createPublicClient();
   // Filters live in the URL, so a shared link or the Back button shows the same results.
   const params = await searchParams;
   const one = (k: string) => (typeof params[k] === "string" ? params[k] : "");
@@ -24,12 +22,9 @@ export default async function Home({
     category: CATEGORY_IDS.has(one("category")) ? one("category") : "",
     gallery: one("gallery").slice(0, 60),
   };
-  const [sources, showcase, galleryCounts, viewCounts, categoryCounts] = await Promise.all([
-    listSources(db),
-    searchShowcase(db, { ...filters, limit: FIRST_SCREEN }),
-    listGalleryCounts(db),
-    getViewCounts(db),
-    getCategoryCounts(db),
+  const [showcase, { sources, galleryCounts, viewCounts, categoryCounts }] = await Promise.all([
+    cachedShowcasePage({ ...filters, limit: FIRST_SCREEN }),
+    cachedDirectoryCounts(),
   ]);
   // The galleries the showcase is collected from, credited and linked at the foot of the page.
   const featured = new Set(galleryCounts.map(([g]) => g));
@@ -37,6 +32,8 @@ export default async function Home({
 
   return (
     <main className="mx-auto flex w-full max-w-[100rem] flex-1 flex-col gap-10 px-4 pb-24 sm:px-6 lg:px-10">
+      {/* The first cards' pictures come from Cloudflare Pages: open that connection while the HTML streams (React moves it into <head>). */}
+      <link rel="preconnect" href={THUMBS} />
       <header className="relative isolate flex flex-col items-center gap-5 pt-14 pb-2 text-center sm:py-20">
         <HeroDecor />
         <p className="rounded-full border bg-card/80 px-3 py-1 font-mono text-xs text-muted-foreground backdrop-blur">

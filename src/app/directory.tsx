@@ -1,16 +1,23 @@
 "use client";
 
 import { ChevronDown, Search, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { amEditor } from "@/app/curate/actions";
-import { EditorTools } from "@/app/curate/editor-tools";
 import { Beam, LiquidSwitch, Orb } from "@/components/effects";
 import { CATEGORIES } from "@/lib/categories";
 import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation } from "@/lib/db/showcase";
 
+// Curation controls only load for editors, so visitors don't download them.
+const EditorTools = dynamic(() => import("@/app/curate/editor-tools").then((m) => m.EditorTools));
+
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
+
+/** Supabase keeps the session in readable `sb-…-auth-token` cookies; without one nobody is signed in. */
+const mightBeSignedIn = () => /(?:^|; )sb-[^=]*-auth-token/.test(document.cookie);
 
 type Filters = { view: Curation; q: string; category: string; gallery: string };
 
@@ -123,7 +130,8 @@ function CategoryChips({ value, onChange, counts }: { value: string; onChange: (
   );
 }
 
-function ShowcaseCard({
+/** Memoized: typing in search or switching filters re-renders the controls, not 60 cards. */
+const ShowcaseCard = memo(function ShowcaseCard({
   entry: e,
   editor,
   onHidden,
@@ -131,15 +139,23 @@ function ShowcaseCard({
 }: {
   entry: ShowcaseEntry;
   editor: boolean;
-  onHidden: () => void;
+  onHidden: (id: string) => void;
   /** In the first row on a wide screen: loaded right away instead of when scrolled near. */
   first: boolean;
 }) {
   const href = e.url ?? e.featured[0]?.sourceUrl;
+  const router = useRouter();
+  const site = `/site/${e.id}`;
+  // Panels load on intent (hover, focus, touch) rather than for all 60 cards on screen at once.
+  const prefetch = () => router.prefetch(site);
   const picture = (
     // The picture opens the site's detail panel over the list; the name below goes straight to the live site.
     <Link
-      href={`/site/${e.id}`}
+      href={site}
+      prefetch={false}
+      onPointerEnter={prefetch}
+      onTouchStart={prefetch}
+      onFocus={prefetch}
       scroll={false}
       aria-label={`${e.name}: full page and inner pages`}
       className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted"
@@ -214,11 +230,11 @@ function ShowcaseCard({
             </span>
           ))}
         </p>
-        {editor && <EditorTools item={e} onHidden={onHidden} />}
+        {editor && <EditorTools item={e} onHidden={() => onHidden(e.id)} />}
       </div>
     </li>
   );
-}
+});
 
 const CURATION_LABEL: Record<Curation, string> = { top: "Top picks", all: "Everything", archive: "Archive" };
 const CURATION_NOTE: Record<Curation, string> = {
@@ -257,7 +273,12 @@ function ShowcaseView({
   // Editors get curation tools on each card; everyone else sees the plain page.
   const [editor, setEditor] = useState(false);
   useEffect(() => {
-    amEditor().then(setEditor, () => {});
+    // Signed-out visitors (most of them) skip the round trip to the server.
+    if (mightBeSignedIn()) amEditor().then(setEditor, () => {});
+  }, []);
+  const onHidden = useCallback((id: string) => {
+    setEntries((prev) => prev.filter((x) => x.id !== id));
+    setMatchTotal((n) => n - 1);
   }, []);
 
   async function load(offset: number) {
@@ -359,10 +380,7 @@ function ShowcaseView({
               entry={e}
               first={i < 5}
               editor={editor}
-              onHidden={() => {
-                setEntries((prev) => prev.filter((x) => x.id !== e.id));
-                setMatchTotal((n) => n - 1);
-              }}
+              onHidden={onHidden}
             />
           ))}
         </ul>

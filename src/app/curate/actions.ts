@@ -1,7 +1,9 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { CATEGORY_IDS } from "@/lib/categories";
 import { getReviewQueue, isEditor, reviewItem, setCategories, type ReviewAction, type ReviewItem, type ReviewQueueName } from "@/lib/db/showcase";
+import { SHOWCASE_TAG } from "@/lib/db/showcase-cache";
 import { createClient } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -12,6 +14,7 @@ export async function reviewAction(id: string, action: ReviewAction): Promise<{ 
   if (!UUID.test(id) || !ACTIONS.includes(action)) return { ok: false };
   try {
     await reviewItem(await createClient(), id, action);
+    updateTag(SHOWCASE_TAG);
     return { ok: true };
   } catch {
     return { ok: false };
@@ -23,6 +26,7 @@ export async function categoriesAction(id: string, categories: string[]): Promis
   if (!UUID.test(id) || categories.length > 6 || !categories.every((c) => CATEGORY_IDS.has(c))) return { ok: false };
   try {
     await setCategories(await createClient(), id, categories);
+    updateTag(SHOWCASE_TAG);
     return { ok: true };
   } catch {
     return { ok: false };

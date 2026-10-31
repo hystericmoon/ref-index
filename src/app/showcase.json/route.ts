@@ -1,6 +1,6 @@
-import { SHOWCASE_VIEWS, searchShowcase, type ShowcaseView } from "@/lib/db/showcase";
+import { SHOWCASE_VIEWS, type ShowcaseView } from "@/lib/db/showcase";
+import { cachedShowcasePage } from "@/lib/db/showcase-cache";
 import { CATEGORY_IDS } from "@/lib/categories";
-import { createPublicClient } from "@/lib/supabase/public";
 
 const MEDIUMS = new Set(["all", "web", "3d", "mobile"]);
 
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const medium = params.get("medium") ?? "all";
   const category = params.get("category") ?? "";
   const view = params.get("view") as ShowcaseView;
-  const page = await searchShowcase(createPublicClient(), {
+  const page = await cachedShowcasePage({
     q: (params.get("q") ?? "").slice(0, 100),
     medium: MEDIUMS.has(medium) ? medium : "all",
     gallery: (params.get("gallery") ?? "").slice(0, 60),

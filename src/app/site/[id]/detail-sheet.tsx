@@ -11,7 +11,7 @@ const EXIT_MS = 300;
  * A site's detail page as a panel that slides up over the list, after Awwwards. Closing it (×, Esc,
  * the backdrop or the Back button) returns to the list as it was: filters, loaded cards and scroll.
  */
-export function DetailSheet({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+export function DetailSheet({ id, title, children }: { id: string; title: ReactNode; children: ReactNode }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
 

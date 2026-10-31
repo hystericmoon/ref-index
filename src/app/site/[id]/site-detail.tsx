@@ -2,14 +2,14 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { cache } from "react";
 import { CATEGORIES } from "@/lib/categories";
-import { getShowcaseItem, type ShowcaseItem } from "@/lib/db/showcase";
-import { createPublicClient } from "@/lib/supabase/public";
+import { DETAILS, type ShowcaseItem } from "@/lib/db/showcase";
+import { cachedShowcaseItem } from "@/lib/db/showcase-cache";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
 
 /** One showcase item by id, once per request (shared by the full page and the slide-up panel). */
-export const loadSite = cache(async (id: string) => (UUID.test(id) ? getShowcaseItem(createPublicClient(), id) : null));
+export const loadSite = cache(async (id: string) => (UUID.test(id) ? cachedShowcaseItem(id) : null));
 
 export function hostOf(url: string) {
   try {
@@ -27,6 +27,8 @@ export function SiteDetail({ item }: { item: ShowcaseItem }) {
 
   return (
     <>
+      {/* Detail captures come from their own Cloudflare Pages project: connect early (React moves this into <head>). */}
+      {d && <link rel="preconnect" href={DETAILS} />}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
           <p className="font-mono text-xs tracking-wider text-muted-foreground uppercase">

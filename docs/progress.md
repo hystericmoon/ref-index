@@ -323,3 +323,9 @@ _(ideas and out-of-scope items noted during sessions)_
   204 couldn't load and keep theirs. 259 Top picks' detail pages retaken banner-free (img/details/v3/),
   and 39 of the 86 old 1x detail captures now sharp (46 remain). Random checks all load from Pages and
   show no banner. Later: newsletter and promo pop-ups (not cookie ones) still appear on a few sites.
+- Speed pass: directory data, /showcase.json and site details sit in Next's data cache for 10 min
+  (tag `showcase`, cleared by editors' actions), so most visits skip Supabase (local TTFB ~400 ms → ~25 ms).
+  border-beam, liquid-gooey, thinking-orbs, the editor tools, toaster and account menu load after the
+  page; signed-out visitors skip the editor check. Home JS 250 → 168 KB gz. Cards are memoized; the
+  panel prefetches on hover/touch and slides up with a skeleton (layout + loading.tsx). Lighthouse
+  mobile before (live): / 73, all 77, portfolio 78, site 89 (LCP 3.7-4.6 s); after: see next entry.

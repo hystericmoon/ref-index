@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SiteHeader } from "@/components/site-header";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/brand";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
+import { LazyToaster } from "@/components/lazy";
 import "./globals.css";
 
 const body = Geist({
@@ -43,7 +43,7 @@ export default function RootLayout({ children, modal }: Readonly<{ children: Rea
             {children}
           </div>
           {modal}
-          <Toaster />
+          <LazyToaster />
         </ThemeProvider>
       </body>
     </html>

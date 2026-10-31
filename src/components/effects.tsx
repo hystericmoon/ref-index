@@ -2,38 +2,68 @@
 
 // The site's motion pieces, built on the libraries.dev packages (MIT):
 // border-beam for glowing edges, thinking-orbs for loading, liquid-gooey for switches.
+// Each library loads after the page is interactive, so none of them is in the first download;
+// until it arrives the plain element shows (the beam's child, a plain pill, an empty orb box).
 
-import { BorderBeam } from "border-beam";
-import { Liquid } from "liquid-gooey";
 import { useTheme } from "next-themes";
-import { ThinkingOrb } from "thinking-orbs";
 import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-const noop = () => () => {};
+type Lib<T> = { subscribe: (onChange: () => void) => () => void; get: () => T | null };
 
-/** False on the server and during hydration, true once running in the browser. */
-function useMounted() {
-  return useSyncExternalStore(noop, () => true, () => false);
+/** A library imported on first use in the browser; every component using it re-renders once it's in. */
+function lazyLib<T>(load: () => Promise<T>): Lib<T> {
+  let mod: T | null = null;
+  let loading: Promise<void> | null = null;
+  const listeners = new Set<() => void>();
+  return {
+    subscribe(onChange) {
+      listeners.add(onChange);
+      loading ??= load().then((m) => {
+        mod = m;
+        listeners.forEach((l) => l());
+      });
+      return () => listeners.delete(onChange);
+    },
+    get: () => mod,
+  };
 }
+
+const none = () => null;
+
+/** The library once loaded; null on the server, during hydration and while it downloads. */
+function useLib<T>(lib: Lib<T>) {
+  return useSyncExternalStore(lib.subscribe, lib.get, none);
+}
+
+const beamLib = lazyLib(() => import("border-beam"));
+const orbLib = lazyLib(() => import("thinking-orbs"));
+const gooeyLib = lazyLib(() => import("liquid-gooey"));
+
+type BeamProps = Omit<ComponentProps<typeof import("border-beam").BorderBeam>, "theme"> & { children: ReactNode };
 
 /**
  * The beam's palette follows the site theme (it defaults to dark-only). The theme is only
  * known in the browser, so the beam joins after hydration; until then the child shows plain.
  */
-export function Beam({ children, ...props }: Omit<ComponentProps<typeof BorderBeam>, "theme"> & { children: ReactNode }) {
+export function Beam({ children, ...props }: BeamProps) {
   const { resolvedTheme } = useTheme();
-  if (!useMounted()) return <>{children}</>;
+  const lib = useLib(beamLib);
+  if (!lib) return <>{children}</>;
   return (
-    <BorderBeam theme={resolvedTheme === "light" ? "light" : "dark"} {...props}>
+    <lib.BorderBeam theme={resolvedTheme === "light" ? "light" : "dark"} {...props}>
       {children}
-    </BorderBeam>
+    </lib.BorderBeam>
   );
 }
 
+type OrbState = ComponentProps<typeof import("thinking-orbs").ThinkingOrb>["state"];
+
 /** A small dotted orb for "working on it" moments. Static under reduced motion. */
-export function Orb({ label, size = 20, state = "searching" }: { label: string; size?: 20 | 64; state?: ComponentProps<typeof ThinkingOrb>["state"] }) {
-  return <ThinkingOrb state={state} size={size} aria-label={label} />;
+export function Orb({ label, size = 20, state = "searching" }: { label: string; size?: 20 | 64; state?: OrbState }) {
+  const lib = useLib(orbLib);
+  if (!lib) return <span role="img" aria-label={label} className="block shrink-0" style={{ width: size, height: size }} />;
+  return <lib.ThinkingOrb state={state} size={size} aria-label={label} />;
 }
 
 type Rect = { left: number; top: number; width: number; height: number };
@@ -57,6 +87,8 @@ export function LiquidSwitch<T extends string>({
 }) {
   const buttons = useRef(new Map<T, HTMLButtonElement>());
   const [rect, setRect] = useState<Rect | null>(null);
+  const gooey = useLib(gooeyLib);
+  const Liquid = gooey?.Liquid;
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -70,7 +102,7 @@ export function LiquidSwitch<T extends string>({
 
   return (
     <div role="group" aria-label={label} className={cn("relative inline-flex w-fit max-w-full flex-wrap gap-0.5 rounded-full bg-muted p-1", className)}>
-      {rect && (
+      {rect && Liquid && (
         // Liquid sets its own position: relative, so a separate layer pins it behind the buttons.
         <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <Liquid
@@ -102,8 +134,8 @@ export function LiquidSwitch<T extends string>({
           className={cn(
             "relative z-10 min-h-11 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9",
             value === option.value && "text-foreground",
-            // Before the first measurement (server render), mark the choice plainly.
-            value === option.value && !rect && "bg-[var(--pill)] shadow-sm",
+            // Before the first measurement (server render) and while the liquid loads, mark the choice plainly.
+            value === option.value && !(rect && Liquid) && "bg-[var(--pill)] shadow-sm",
           )}
         >
           {option.label}
