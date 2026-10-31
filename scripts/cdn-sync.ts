@@ -1,16 +1,22 @@
-// Copies the showcase images the site uses into a local mirror and uploads it to two Cloudflare
-// Pages projects, one for card screenshots and one for detail captures. Pages hosting is free with
+// Keeps the showcase images the site uses in a local mirror and uploads it to two Cloudflare Pages
+// projects, one for card screenshots and one for detail captures. Pages hosting is free with
 // unlimited traffic, but each upload replaces the whole project, so the mirror (cdn/, not committed)
-// must hold every file: back it up. Images the site no longer uses are dropped from the mirror, and
-// so from Pages on the next upload. Unchanged files aren't sent again.
+// is the only full copy besides Pages itself: back it up. Images the site no longer uses are dropped
+// from the mirror, and so from Pages on the next upload. Unchanged files aren't sent again.
 //
-// Run:  node scripts/cdn-sync.ts              (mirror, then upload)
-//       node scripts/cdn-sync.ts --no-deploy  (mirror only)
+// New captures go straight into the mirror with --add <batch folder> (its img/ tree), and are
+// uploaded before the batch is recorded, so the site never points at a file Pages doesn't have yet.
+// Older images missing from the mirror are fetched from the Supabase bucket, which no longer keeps
+// copies of current images.
+//
+// Run:  node scripts/cdn-sync.ts                       (mirror, then upload)
+//       node scripts/cdn-sync.ts --add <batch folder>  (add a capture batch, then upload)
+//       node scripts/cdn-sync.ts --no-deploy           (mirror only)
 // Needs a one-time `wrangler login`. The site uses the copies once NEXT_PUBLIC_THUMBS_URL and
 // NEXT_PUBLIC_DETAILS_URL point at the projects (src/lib/db/showcase.ts).
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 
@@ -45,6 +51,21 @@ for (let from = 0; ; from += 1000) {
     if (row.details) for (const path of [row.details.full, ...row.details.pages.map((p) => p.path)]) wanted.details.add(path);
   }
   if (page.length < 1000) break;
+}
+
+// A capture batch not yet recorded: its files join the mirror and count as wanted.
+const addIndex = process.argv.indexOf("--add");
+const added = addIndex > 0 ? join(process.argv[addIndex + 1], "img") : "";
+if (added && existsSync(added)) {
+  for (const entry of readdirSync(added, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".webp")) continue;
+    const path = `img/${relative(added, join(entry.parentPath, entry.name)).replaceAll("\\", "/")}`;
+    const name = path.startsWith("img/details/") ? "details" : "thumbs";
+    const target = join(MIRROR, PROJECTS[name], path);
+    mkdirSync(dirname(target), { recursive: true });
+    copyFileSync(join(entry.parentPath, entry.name), target);
+    wanted[name].add(path);
+  }
 }
 
 for (const [name, paths] of Object.entries(wanted) as [keyof typeof PROJECTS, Set<string>][]) {

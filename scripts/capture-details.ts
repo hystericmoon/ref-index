@@ -9,7 +9,7 @@
 // worked around.
 //
 // Run:  node scripts/capture-details.ts --out tmp/showcase-details/batch-1 --limit 200
-// Then: supabase storage cp -r <out>/img ss:///showcase --experimental and
+// Then: node scripts/cdn-sync.ts --add <out> (uploads to Cloudflare Pages) and
 // scripts/showcase-details-sql.ts. scripts/capture-details.sh does all three.
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";

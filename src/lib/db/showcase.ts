@@ -17,11 +17,10 @@ export type ShowcaseEntry = {
   featured: { gallery: string; sourceUrl: string }[];
 };
 
-// Images live in the Supabase bucket. Once scripts/cdn-sync.ts has uploaded them to Cloudflare Pages,
-// NEXT_PUBLIC_THUMBS_URL and NEXT_PUBLIC_DETAILS_URL point at those copies instead (free traffic).
-const BUCKET = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/showcase`;
-const THUMBS = process.env.NEXT_PUBLIC_THUMBS_URL || BUCKET;
-const DETAILS = process.env.NEXT_PUBLIC_DETAILS_URL || BUCKET;
+// Images live only on Cloudflare Pages (scripts/cdn-sync.ts uploads them; free traffic). The
+// addresses come from .env.production and .env.local.
+const THUMBS = process.env.NEXT_PUBLIC_THUMBS_URL || "https://openrefs-thumbs.pages.dev";
+const DETAILS = process.env.NEXT_PUBLIC_DETAILS_URL || "https://openrefs-details.pages.dev";
 const imageUrl = (path: string) => `${path.startsWith("img/details/") ? DETAILS : THUMBS}/${path}`;
 
 /** top: staff picks and sites featured by 2+ galleries · all: every live entry · archive: sites that are gone. */

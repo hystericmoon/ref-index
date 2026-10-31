@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Captures showcase screenshots in batches of 400 and publishes each batch as it finishes:
-# uploads the WebPs to the `showcase` bucket, then records them in showcase_items.
+# adds the WebPs to the cdn/ mirror and uploads it to Cloudflare Pages (scripts/cdn-sync.ts), then
+# records them in showcase_items.
 # Resumable: items already tried are skipped. Run from the repo root (Git Bash).
 set -euo pipefail
 supabase=./node_modules/.bin/supabase
@@ -11,10 +12,9 @@ while true; do
   # Backstop: a wedged browser ends the batch after 30 minutes; finished items are already recorded.
   timeout 1800 node scripts/capture-showcase.ts --out "$dir" --limit 400 --workers 12 || true
   [ -s "$dir/results.ndjson" ] || { rm -rf "$dir"; echo "All items tried."; break; }
-  # A failed publish is logged, not fatal: rerun the two commands for that batch later.
-  if ls "$dir"/img/*.webp >/dev/null 2>&1; then
-    $supabase storage cp -r "$dir/img" ss:///showcase --linked --experimental -j 8 \
-      --cache-control "public, max-age=31536000, immutable" >/dev/null || echo "batch $n: upload failed"
+  # A failed upload skips recording that batch: rerun the sync with --add, then the two SQL commands.
+  if [ -n "$(find "$dir/img" -name "*.webp" 2>/dev/null | head -1)" ]; then
+    node scripts/cdn-sync.ts --add "$dir" >/dev/null || { echo "batch $n: upload failed, not recorded"; continue; }
   fi
   node scripts/showcase-thumbs-sql.ts "$dir" > "$dir.sql"
   $supabase db query --linked -f "$dir.sql" >/dev/null || echo "batch $n: recording failed"

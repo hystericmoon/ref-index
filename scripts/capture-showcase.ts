@@ -7,7 +7,7 @@
 // worked around. Every outcome goes to <out>/results.ndjson, so a rerun resumes.
 //
 // Run:  node scripts/capture-showcase.ts --out tmp/showcase-thumbs/batch-1 --limit 500
-// Then: supabase storage cp -r <out>/img ss:///showcase --experimental (objects land at
+// Then: node scripts/cdn-sync.ts --add <out> (uploads to Cloudflare Pages; files land at
 // img/<id>.webp) and scripts/showcase-thumbs-sql.ts. scripts/capture-showcase.sh does all three.
 // Needs NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in .env.local
 // (showcase items are publicly readable).

@@ -116,7 +116,7 @@ async function submit() {
       .join("\n");
     const content: Anthropic.ContentBlockParam[] = [];
     if (item.thumb_path) {
-      content.push({ type: "image", source: { type: "url", url: `${supabaseUrl}/storage/v1/object/public/showcase/${item.thumb_path}` } });
+      content.push({ type: "image", source: { type: "url", url: `${env("NEXT_PUBLIC_THUMBS_URL")}/${item.thumb_path}` } });
     }
     content.push({ type: "text", text });
     return {

@@ -10,6 +10,7 @@ mkdir -p tmp
   echo "== $(date '+%Y-%m-%d %H:%M')"
   bash scripts/capture-showcase.sh
   bash scripts/capture-details.sh
-  # Copies the new images to Cloudflare Pages, where the site loads them from.
+  # Copies the new images to Cloudflare Pages, where the site loads them from. Each capture batch is
+  # already uploaded; this run drops images the site no longer uses.
   node scripts/cdn-sync.ts
 } >> tmp/daily-captures.log 2>&1
