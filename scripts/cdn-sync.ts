@@ -14,7 +14,7 @@
 // Run:  node scripts/cdn-sync.ts                       (mirror, then upload)
 //       node scripts/cdn-sync.ts --add <batch folder>  (add a capture batch, then upload)
 //       node scripts/cdn-sync.ts --no-deploy           (mirror only)
-// Needs a one-time `wrangler login`. The site uses the copies once NEXT_PUBLIC_THUMBS_URL,
+// Needs `wrangler login`, or CLOUDFLARE_API_TOKEN in .env.local for unattended runs. The site uses the copies once NEXT_PUBLIC_THUMBS_URL,
 // NEXT_PUBLIC_THUMBS_SM_URL and NEXT_PUBLIC_DETAILS_URL point at the projects (src/lib/db/showcase.ts).
 
 import { spawnSync } from "node:child_process";
@@ -29,13 +29,25 @@ const PROJECTS = { thumbs: "openrefs-thumbs", thumbsSmall: "openrefs-thumbs-sm",
 const MAX_FILES = 20_000;
 const MIRROR = "cdn";
 
-function env(name: string): string {
+function optionalEnv(name: string): string | undefined {
   const line = readFileSync(".env.local", "utf8")
     .split(/\r?\n/)
     .find((l) => l.startsWith(`${name}=`));
-  const value = line?.slice(name.length + 1).trim();
+  return line?.slice(name.length + 1).trim() || undefined;
+}
+
+function env(name: string): string {
+  const value = optionalEnv(name);
   if (!value) throw new Error(`${name} is missing from .env.local`);
   return value;
+}
+
+// Unattended runs (Task Scheduler) can't renew a `wrangler login`, so they need an API token
+// with "Cloudflare Pages: Edit" in .env.local.
+const wranglerEnv = { ...process.env };
+for (const name of ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]) {
+  const value = optionalEnv(name);
+  if (value) wranglerEnv[name] = value;
 }
 
 const supabaseUrl = env("NEXT_PUBLIC_SUPABASE_URL");
@@ -130,7 +142,7 @@ for (const [name, paths] of Object.entries(wanted) as [keyof typeof PROJECTS, Se
   const result = spawnSync(
     `"${resolve("node_modules", ".bin", "wrangler")}"`,
     ["pages", "deploy", `"${resolve(dir)}"`, "--project-name", project, "--branch", "main", "--commit-dirty=true"],
-    { stdio: "inherit", shell: true, cwd: tmpdir() },
+    { stdio: "inherit", shell: true, cwd: tmpdir(), env: wranglerEnv },
   );
   if (result.status !== 0) throw new Error(`Upload to ${project} failed`);
 }

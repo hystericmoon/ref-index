@@ -339,3 +339,11 @@ _(ideas and out-of-scope items noted during sessions)_
   and uploads openrefs-thumbs-sm before a batch is recorded, so every recorded screenshot has one;
   small-thumbs.json is gone and the site always offers the small copy. Tested with a dummy --add batch
   (no upload). The next daily run also drops 187 detail captures no row uses from openrefs-details.
+
+### Daily captures scheduled (2026-11-01)
+- "Openrefs daily captures" is now registered in Windows Task Scheduler (daily 11:30, catches up if the PC was off).
+- First run failed: Playwright needed a new Chromium build (installed), and the expired `wrangler login`
+  can't renew unattended. `cdn-sync.ts` now passes CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID from
+  .env.local to wrangler; the owner adds a token with "Cloudflare Pages: Edit".
+- Open: no showcase item is newer than 2026-10-28, so the 03:00 UTC refresh cron looks like it was never
+  turned on (Supabase dashboard → Integrations → Cron → Edge Function `showcase-refresh`).
