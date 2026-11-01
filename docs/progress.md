@@ -331,4 +331,8 @@ _(ideas and out-of-scope items noted during sessions)_
   Live Lighthouse before → after (score, TBT): mobile / 73→91 (607→119 ms), all 77→86, portfolio
   78→86, site 89→96; desktop / 92→100, all 86→100, portfolio 95→100, site 85→98 (TBT now 0). Mobile LCP
   still 2.7-4.0 s (simulated; scripts before first paint). Live TTFB 0.4-1.8 s → 0.25-0.57 s.
-  Later: 640px card thumbnails (needs a third Pages project; thumbs is near its 20,000-file cap).
+- Card thumbnails at 720px: copies of all 11,760 thumbnails (~16 KB vs ~38 KB) on a third Pages project,
+  openrefs-thumbs-sm; cards pick them with srcset/sizes, 2x+ screens still get 1280px. small-thumbs.json
+  lists which paths have a copy, so newer captures fall back to the full picture. Live images per page:
+  mobile 199 → 78-98 KB, desktop 1.3 MB → 0.5-0.57 MB; mobile scores / 93, all 88, portfolio 88.
+  Later: cdn-sync.ts should make the 720px copy for new captures and add it to small-thumbs.json.
