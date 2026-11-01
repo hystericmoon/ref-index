@@ -1,8 +1,7 @@
 # Cloud handover
 
-Work moved from the desktop sessions to a cloud session on 2026-11-01. Nothing was in progress;
-`main` was at bc4d9e5. Read `CLAUDE.md` first, then the end of `docs/progress.md` (latest work and
-the "Later" list).
+For when work moves to a cloud session (it stays on the Windows PC for now, as of 2026-11-01).
+Read `CLAUDE.md` first, then the end of `docs/progress.md` (latest work and the "Later" list).
 
 ## Not in the repo (only on the Windows PC)
 - `.env.local`: names in `.env.example`. The user sets the values as cloud environment
