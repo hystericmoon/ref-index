@@ -335,4 +335,7 @@ _(ideas and out-of-scope items noted during sessions)_
   openrefs-thumbs-sm; cards pick them with srcset/sizes, 2x+ screens still get 1280px. small-thumbs.json
   lists which paths have a copy, so newer captures fall back to the full picture. Live images per page:
   mobile 199 → 78-98 KB, desktop 1.3 MB → 0.5-0.57 MB; mobile scores / 93, all 88, portfolio 88.
-  Later: cdn-sync.ts should make the 720px copy for new captures and add it to small-thumbs.json.
+- cdn-sync.ts now makes the 720px copy of every card screenshot (from the mirror, cdn/openrefs-thumbs-sm)
+  and uploads openrefs-thumbs-sm before a batch is recorded, so every recorded screenshot has one;
+  small-thumbs.json is gone and the site always offers the small copy. Tested with a dummy --add batch
+  (no upload). The next daily run also drops 187 detail captures no row uses from openrefs-details.

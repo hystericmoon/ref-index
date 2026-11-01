@@ -1,27 +1,31 @@
-// Keeps the showcase images the site uses in a local mirror and uploads it to two Cloudflare Pages
-// projects, one for card screenshots and one for detail captures. Pages hosting is free with
-// unlimited traffic, but each upload replaces the whole project, so the mirror (cdn/, not committed)
-// is the only full copy besides Pages itself: back it up. Images the site no longer uses are dropped
-// from the mirror, and so from Pages on the next upload. Unchanged files aren't sent again.
+// Keeps the showcase images the site uses in a local mirror and uploads it to three Cloudflare Pages
+// projects: card screenshots, their 720px copies (what cards load on most screens), and detail
+// captures. Pages hosting is free with unlimited traffic, but each upload replaces the whole project,
+// so the mirror (cdn/, not committed) is the only full copy besides Pages itself: back it up. Images
+// the site no longer uses are dropped from the mirror, and so from Pages on the next upload.
+// Unchanged files aren't sent again.
 //
 // New captures go straight into the mirror with --add <batch folder> (its img/ tree), and are
 // uploaded before the batch is recorded, so the site never points at a file Pages doesn't have yet.
 // Older images missing from the mirror are fetched from the Supabase bucket, which no longer keeps
-// copies of current images.
+// copies of current images. The 720px copies are made here from the mirrored screenshots, so every
+// screenshot the site can show has one (src/lib/db/showcase.ts relies on that).
 //
 // Run:  node scripts/cdn-sync.ts                       (mirror, then upload)
 //       node scripts/cdn-sync.ts --add <batch folder>  (add a capture batch, then upload)
 //       node scripts/cdn-sync.ts --no-deploy           (mirror only)
-// Needs a one-time `wrangler login`. The site uses the copies once NEXT_PUBLIC_THUMBS_URL and
-// NEXT_PUBLIC_DETAILS_URL point at the projects (src/lib/db/showcase.ts).
+// Needs a one-time `wrangler login`. The site uses the copies once NEXT_PUBLIC_THUMBS_URL,
+// NEXT_PUBLIC_THUMBS_SM_URL and NEXT_PUBLIC_DETAILS_URL point at the projects (src/lib/db/showcase.ts).
 
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
+import sharp from "sharp";
 
 // The free plan allows 20,000 files per project; start another project before one fills up.
-const PROJECTS = { thumbs: "openrefs-thumbs", details: "openrefs-details" };
+// Order matters: the small copies are made from the screenshot mirror, so thumbs goes first.
+const PROJECTS = { thumbs: "openrefs-thumbs", thumbsSmall: "openrefs-thumbs-sm", details: "openrefs-details" };
 const MAX_FILES = 20_000;
 const MIRROR = "cdn";
 
@@ -38,8 +42,9 @@ const supabaseUrl = env("NEXT_PUBLIC_SUPABASE_URL");
 const key = env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
 const bucket = `${supabaseUrl}/storage/v1/object/public/showcase`;
 
-// Every image path the site can show, by project.
-const wanted = { thumbs: new Set<string>(), details: new Set<string>() };
+// Every image path the site can show, by project. Small copies share the screenshots' paths.
+const thumbs = new Set<string>();
+const wanted = { thumbs, thumbsSmall: thumbs, details: new Set<string>() };
 for (let from = 0; ; from += 1000) {
   const response = await fetch(`${supabaseUrl}/rest/v1/showcase_items?select=id,thumb_path,details&thumb_path=not.is.null&order=id`, {
     headers: { apikey: key, range: `${from}-${from + 999}` },
@@ -68,6 +73,17 @@ if (added && existsSync(added)) {
   }
 }
 
+/** A missing mirror file: a 720px copy of the screenshot for thumbsSmall, else from the old bucket. */
+async function source(name: keyof typeof PROJECTS, path: string): Promise<Buffer | null> {
+  if (name === "thumbsSmall") {
+    const full = join(MIRROR, PROJECTS.thumbs, path);
+    if (!existsSync(full)) return null;
+    return sharp(full).resize({ width: 720, withoutEnlargement: true }).webp({ quality: 72, smartSubsample: true }).toBuffer().catch(() => null);
+  }
+  const response = await fetch(`${bucket}/${path}`).catch(() => null);
+  return response?.ok ? Buffer.from(await response.arrayBuffer()) : null;
+}
+
 for (const [name, paths] of Object.entries(wanted) as [keyof typeof PROJECTS, Set<string>][]) {
   const project = PROJECTS[name];
   const dir = join(MIRROR, project);
@@ -93,19 +109,19 @@ for (const [name, paths] of Object.entries(wanted) as [keyof typeof PROJECTS, Se
     Array.from({ length: 16 }, async () => {
       while (next < missing.length) {
         const path = missing[next++];
-        const response = await fetch(`${bucket}/${path}`).catch(() => null);
-        if (!response?.ok) {
+        const image = await source(name, path);
+        if (!image) {
           failed.push(path);
           continue;
         }
         mkdirSync(dirname(join(dir, path)), { recursive: true });
-        writeFileSync(join(dir, path), Buffer.from(await response.arrayBuffer()));
+        writeFileSync(join(dir, path), image);
       }
     }),
   );
   // Every image gets a new path when it changes, so browsers and Cloudflare can keep it for a year.
   writeFileSync(join(dir, "_headers"), "/img/*\n  Cache-Control: public, max-age=31536000, immutable\n  Access-Control-Allow-Origin: *\n");
-  console.error(`${project}: ${paths.size} files, ${missing.length - failed.length} downloaded, ${removed} removed, ${failed.length} failed`);
+  console.error(`${project}: ${paths.size} files, ${missing.length - failed.length} ${name === "thumbsSmall" ? "made" : "downloaded"}, ${removed} removed, ${failed.length} failed`);
   if (failed.length) console.error(`  failed, e.g. ${failed.slice(0, 3).join(", ")}`);
 
   if (process.argv.includes("--no-deploy")) continue;

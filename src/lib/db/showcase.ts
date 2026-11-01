@@ -1,5 +1,4 @@
 import type { DbClient } from "./client";
-import smallThumbList from "./small-thumbs.json";
 
 export type ShowcaseEntry = {
   id: string;
@@ -9,7 +8,7 @@ export type ShowcaseEntry = {
   tags: string[];
   /** Public URL of a 1280×800 WebP of the site's first screen, when one was captured. */
   thumbUrl: string | null;
-  /** The same picture 720px wide, for cards; null when it has no small copy yet. */
+  /** The same picture 720px wide, for cards (null when there is no picture). */
   thumbSmallUrl: string | null;
   /** Chosen by an editor. */
   staffPick: boolean;
@@ -27,12 +26,10 @@ export const DETAILS = process.env.NEXT_PUBLIC_DETAILS_URL || "https://openrefs-
 export const THUMBS_SMALL = process.env.NEXT_PUBLIC_THUMBS_SM_URL || "https://openrefs-thumbs-sm.pages.dev";
 const imageUrl = (path: string) => `${path.startsWith("img/details/") ? DETAILS : THUMBS}/${path}`;
 
-// Cards are ~290-420 CSS px wide, so most screens need less than the 1280px thumbnail. 720px copies
-// (same paths) live on a third Pages project; small-thumbs.json lists which thumbnails have one
-// (paths without "img/" and ".webp"). Newer captures fall back to the full thumbnail until added.
-const smallThumbs = new Set<string>(smallThumbList);
-const smallThumbUrl = (path: string | null) =>
-  path && smallThumbs.has(path.replace(/^img\//, "").replace(/\.webp$/, "")) ? `${THUMBS_SMALL}/${path}` : null;
+// Cards are ~290-420 CSS px wide, so most screens need less than the 1280px thumbnail. Every thumbnail
+// has a 720px copy at the same path on a third Pages project: scripts/cdn-sync.ts makes it before a
+// capture is recorded.
+const smallThumbUrl = (path: string | null) => (path ? `${THUMBS_SMALL}/${path}` : null);
 
 /** top: staff picks and sites featured by 2+ galleries · all: every live entry · archive: sites that are gone. */
 export type ShowcaseView = "top" | "all" | "archive";
