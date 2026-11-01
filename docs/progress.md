@@ -345,5 +345,6 @@ _(ideas and out-of-scope items noted during sessions)_
 - First run failed: Playwright needed a new Chromium build (installed), and the expired `wrangler login`
   can't renew unattended. `cdn-sync.ts` now passes CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID from
   .env.local to wrangler; the owner adds a token with "Cloudflare Pages: Edit".
-- Open: no showcase item is newer than 2026-10-28, so the 03:00 UTC refresh cron looks like it was never
-  turned on (Supabase dashboard → Integrations → Cron → Edge Function `showcase-refresh`).
+- The 03:00 UTC refresh cron was on, but every save since 2026-10-30 hit the 8 s statement timeout:
+  `add_showcase_entries` matched on lower(url)/lower(name) with no index (2 full scans of ~21k rows per
+  entry). Added both expression indexes; a manual run then saved 38 new items and 45 credits.
