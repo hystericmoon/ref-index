@@ -8,6 +8,8 @@ cd "$(dirname "$0")/.."
 mkdir -p tmp
 {
   echo "== $(date '+%Y-%m-%d %H:%M')"
+  # A Playwright update needs a new browser build; this is a no-op when it's already installed.
+  pnpm exec playwright install chromium
   bash scripts/capture-showcase.sh
   bash scripts/capture-details.sh
   # Copies the new images to Cloudflare Pages, where the site loads them from. Each capture batch is
