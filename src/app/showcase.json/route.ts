@@ -14,7 +14,6 @@ export async function GET(request: Request) {
   const page = await cachedShowcasePage({
     q: (params.get("q") ?? "").slice(0, 100),
     medium: MEDIUMS.has(medium) ? medium : "all",
-    gallery: (params.get("gallery") ?? "").slice(0, 60),
     category: CATEGORY_IDS.has(category) ? category : undefined,
     view: SHOWCASE_VIEWS.includes(view) ? view : "top",
     offset: Math.min(Math.max(Number(params.get("offset")) || 0, 0), 50_000),

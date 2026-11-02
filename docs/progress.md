@@ -369,3 +369,17 @@ _(ideas and out-of-scope items noted during sessions)_
 - Unconfirmed: the 187 unused detail images expected to be pruned; every sync so far printed "0 removed".
 - Lapa Ninja 403s scripts; if the first real run also shows "skipped (HTTP 403)", drop it.
 - Next candidates (owner's call): the six sitemap-diff galleries in the entry above.
+
+### Paused 2026-11-02: Style UI source and hidden gallery credits (branch wip/style-ui-hide-credits)
+- Not on main and not live. Two commits plus one work-in-progress commit on this branch:
+  - Style UI (style.ai.id) as a `cards` gallery over its 3 pages, free tools only: 47 (38 UI libraries →
+    category `ui-kit` "UI libraries & components", 9 background/design.md tools → `design-tools`). Tags
+    "ui library"/"design tool" keep them through categorize-showcase.ts.
+  - Migration 20261102000200 (add_showcase_entries stores tags/category) is NOT applied; the function with
+    Style UI is NOT deployed; the 47 tools are NOT imported or screenshotted.
+  - Owner chose to hide all gallery credits on the public site, keeping showcase_features internally
+    (refresh dedupe, Top picks, curate page). Done in code, typecheck/lint pass, NOT checked in a browser.
+- To resume: check the page (pnpm dev: no "Featured on", gallery filter, "The galleries" footer or gallery
+  names), build, merge to main, push; then with the owner's OK: `supabase db push`, deploy showcase-refresh,
+  import Style UI (or wait for the 03:00 UTC run), run capture-showcase.sh.
+- Also still open from the "Resume here" entry above (first run of the nine new galleries on 2026-11-03).

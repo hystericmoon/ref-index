@@ -1,7 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
-import { getCategoryCounts, getShowcaseItem, getViewCounts, listGalleryCounts, searchShowcase, type ShowcaseQuery } from "./showcase";
-import { listSources } from "./sources";
+import { getCategoryCounts, getShowcaseItem, getViewCounts, searchShowcase, type ShowcaseQuery } from "./showcase";
 
 /**
  * Public showcase reads, kept in Next's data cache for 10 minutes so most visits skip the
@@ -13,17 +12,12 @@ const options = { revalidate: 600, tags: [SHOWCASE_TAG] };
 /** One page of showcase items for the directory and /showcase.json. */
 export const cachedShowcasePage = unstable_cache((query: ShowcaseQuery) => searchShowcase(createPublicClient(), query), ["showcase-page"], options);
 
-/** Everything the directory shows besides the cards: galleries, and counts per view and category. */
+/** Everything the directory shows besides the cards: counts per view and category (galleries aren't credited). */
 export const cachedDirectoryCounts = unstable_cache(
   async () => {
     const db = createPublicClient();
-    const [sources, galleryCounts, viewCounts, categoryCounts] = await Promise.all([
-      listSources(db),
-      listGalleryCounts(db),
-      getViewCounts(db),
-      getCategoryCounts(db),
-    ]);
-    return { sources, galleryCounts, viewCounts, categoryCounts };
+    const [viewCounts, categoryCounts] = await Promise.all([getViewCounts(db), getCategoryCounts(db)]);
+    return { viewCounts, categoryCounts };
   },
   ["directory-counts"],
   options,

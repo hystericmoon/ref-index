@@ -5,7 +5,8 @@ export const alt = `${SITE_NAME}: ${SITE_TAGLINE}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const GALLERIES = ["Land-book", "Godly", "SiteInspire", "Minimal Gallery", "Httpster", "Awwwards", "One Page Love"];
+// The kinds of site in the collection (src/lib/categories.ts), shown as chips.
+const KINDS = ["Portfolios", "Studios", "SaaS", "E-commerce", "Editorial", "UI libraries"];
 
 export default function OpenGraphImage() {
   return new ImageResponse(
@@ -29,11 +30,11 @@ export default function OpenGraphImage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 120, fontWeight: 700, letterSpacing: -4, lineHeight: 1 }}>{SITE_NAME}</div>
           <div style={{ fontSize: 40, color: "#a3a3a3", maxWidth: 900, lineHeight: 1.3 }}>
-            {`${SITE_TAGLINE} Thousands of sites picked by 13 design galleries, curated, no paywall.`}
+            {`${SITE_TAGLINE} Thousands of well-designed sites, curated, no paywall.`}
           </div>
         </div>
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-          {GALLERIES.map((g) => (
+          {KINDS.map((g) => (
             <div
               key={g}
               style={{ display: "flex", fontSize: 24, padding: "8px 18px", borderRadius: 999, border: "2px solid #333333", color: "#f2f2f2" }}

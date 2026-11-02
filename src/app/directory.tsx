@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Search, Sparkles } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -21,7 +21,7 @@ const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "i
 /** Supabase keeps the session in readable `sb-…-auth-token` cookies; without one nobody is signed in. */
 const mightBeSignedIn = () => /(?:^|; )sb-[^=]*-auth-token/.test(document.cookie);
 
-type Filters = { view: Curation; q: string; category: string; gallery: string };
+type Filters = { view: Curation; q: string; category: string };
 
 function hostOf(url: string | null) {
   if (!url) return "";
@@ -33,17 +33,18 @@ function hostOf(url: string | null) {
 }
 
 /** Keep the filters in the URL so a link, a reload or the Back button reproduces what you see. */
-function useUrlState({ view, q, category, gallery }: Filters) {
+function useUrlState({ view, q, category }: Filters) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const set = (k: string, v: string) => (v ? params.set(k, v) : params.delete(k));
     set("view", view === "top" ? "" : view);
     set("q", q.trim());
     set("category", category);
-    set("gallery", gallery);
+    // Old links may still carry the gallery filter, which no longer exists.
+    params.delete("gallery");
     const search = params.toString();
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
-  }, [view, q, category, gallery]);
+  }, [view, q, category]);
 }
 
 function SearchField({
@@ -97,12 +98,11 @@ function SearchField({
 
 type ShowcasePage = { items: ShowcaseEntry[]; total: number };
 
-function showcaseUrl(view: Curation, q: string, category: string, gallery: string, offset: number) {
+function showcaseUrl(view: Curation, q: string, category: string, offset: number) {
   const params = new URLSearchParams();
   if (view !== "top") params.set("view", view);
   if (q.trim()) params.set("q", q.trim());
   if (category) params.set("category", category);
-  if (gallery) params.set("gallery", gallery);
   if (offset) params.set("offset", String(offset));
   return `/showcase.json${params.size ? `?${params}` : ""}`;
 }
@@ -145,7 +145,7 @@ const ShowcaseCard = memo(function ShowcaseCard({
   /** In the first row on a wide screen: loaded right away instead of when scrolled near. */
   first: boolean;
 }) {
-  const href = e.url ?? e.featured[0]?.sourceUrl;
+  const href = e.url ?? e.sourceUrl ?? undefined;
   const router = useRouter();
   const site = `/site/${e.id}`;
   // Panels load on intent (hover, focus, touch) rather than for all 60 cards on screen at once.
@@ -215,27 +215,8 @@ const ShowcaseCard = memo(function ShowcaseCard({
               <Sparkles className="size-3" aria-hidden="true" /> Staff pick
             </span>
           )}
-          <span className="font-mono">{e.url ? hostOf(e.url) : `Opens ${e.featured[0]?.gallery} page`}</span>
+          <span className="font-mono">{e.url ? hostOf(e.url) : "No live address"}</span>
         </div>
-        <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
-          {e.galleryCount > 1 ? `Featured on ${e.galleryCount} galleries:` : "Featured on"}
-          {e.featured.map((f, i) => (
-            <span key={f.gallery} className="flex items-center gap-1.5">
-              {i > 0 && <span aria-hidden="true">·</span>}
-              {/* Out of the Tab order, so a page of cards isn't hundreds of stops: the detail panel lists the same links. */}
-              <a
-                href={f.sourceUrl}
-                target="_blank"
-                rel="noopener"
-                tabIndex={-1}
-                className="inline-flex min-h-11 items-center font-medium text-link hover:underline sm:min-h-0 sm:py-1"
-              >
-                {f.gallery}
-                <span className="sr-only"> (opens {e.name} on {f.gallery} in a new tab)</span>
-              </a>
-            </span>
-          ))}
-        </p>
         {editor && <EditorTools item={e} onHidden={() => onHidden(e.id)} />}
       </div>
     </li>
@@ -244,8 +225,8 @@ const ShowcaseCard = memo(function ShowcaseCard({
 
 const CURATION_LABEL: Record<Curation, string> = { top: "Top picks", all: "Everything", archive: "Archive" };
 const CURATION_NOTE: Record<Curation, string> = {
-  top: "Staff picks and sites featured by two or more galleries.",
-  all: "Every live site and app from the 13 galleries.",
+  top: "Staff picks and the sites design curators pick most.",
+  all: "Every live site and app in the collection.",
   archive: "Sites that have gone offline, been parked or block visitors. Kept for the record.",
 };
 
@@ -253,14 +234,12 @@ function ShowcaseView({
   initial,
   counts,
   categoryCounts,
-  galleries,
   initialFilters,
   initialTotal,
 }: {
   initial: ShowcaseEntry[];
   counts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
-  galleries: [string, number][];
   initialFilters: Filters;
   initialTotal: number;
 }) {
@@ -272,8 +251,7 @@ function ShowcaseView({
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState(initialFilters.q);
   const [category, setCategory] = useState(initialFilters.category);
-  const [gallery, setGallery] = useState(initialFilters.gallery);
-  useUrlState({ view: curation, q, category, gallery });
+  useUrlState({ view: curation, q, category });
   const firstRender = useRef(true);
   const request = useRef(0);
   // Editors get curation tools on each card; everyone else sees the plain page.
@@ -291,7 +269,7 @@ function ShowcaseView({
     const id = ++request.current;
     setLoading(true);
     try {
-      const res = await fetch(showcaseUrl(curation, q, category, gallery, offset));
+      const res = await fetch(showcaseUrl(curation, q, category, offset));
       if (!res.ok) throw new Error(String(res.status));
       const page = (await res.json()) as ShowcasePage;
       if (id !== request.current) return;
@@ -312,13 +290,13 @@ function ShowcaseView({
     const timer = window.setTimeout(() => load(0), 250);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the filters change
-  }, [curation, q, category, gallery]);
+  }, [curation, q, category]);
 
   const list = entries;
 
   return (
     <div className="flex flex-col gap-5" aria-busy={loading}>
-      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search sites, tags or galleries" busy={loading} />
+      <SearchField id="showcase-q" label="Search showcase" value={q} onChange={setQ} placeholder="Search sites or tags" busy={loading} />
       <div className="flex flex-col gap-5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-6 lg:gap-y-3">
         <LiquidSwitch
           label="Collection"
@@ -333,24 +311,6 @@ function ShowcaseView({
             ),
           }))}
         />
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          Featured on
-          <span className="relative flex items-center">
-            <select
-              value={gallery}
-              onChange={(e) => setGallery(e.target.value)}
-              className="min-h-11 cursor-pointer appearance-none rounded-full border bg-card pr-9 pl-4 text-sm text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:min-h-9"
-            >
-              <option value="">All galleries</option>
-              {galleries.map(([g, n]) => (
-                <option key={g} value={g}>
-                  {g} ({n})
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3.5 size-4 text-muted-foreground" aria-hidden="true" />
-          </span>
-        </label>
       </div>
       <CategoryChips
         value={category}
@@ -408,9 +368,9 @@ function ShowcaseView({
         </button>
       )}
       <p className="max-w-[72ch] border-t pt-4 text-sm text-muted-foreground">
-        Collected from 13 design galleries&apos; listings, refreshed daily, then curated: top picks are sites
-        that several galleries agree on plus our own staff picks, and dead or parked sites move to the archive.
-        Screenshots are our own captures of each live site. Sponsored placements are left out.
+        Collected from around the web, refreshed daily, then curated: top picks are the sites design curators
+        pick most plus our own staff picks, and dead or parked sites move to the archive. Screenshots are our own
+        captures of each live site. Sponsored placements are left out.
       </p>
     </div>
   );
@@ -420,14 +380,12 @@ export function Directory({
   showcase,
   viewCounts,
   categoryCounts,
-  galleryCounts,
   initialFilters,
   initialTotal,
 }: {
   showcase: ShowcaseEntry[];
   viewCounts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
-  galleryCounts: [string, number][];
   initialFilters: Filters;
   initialTotal: number;
 }) {
@@ -436,7 +394,6 @@ export function Directory({
       initial={showcase}
       counts={viewCounts}
       categoryCounts={categoryCounts}
-      galleries={galleryCounts}
       initialFilters={initialFilters}
       initialTotal={initialTotal}
     />

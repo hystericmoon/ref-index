@@ -16,7 +16,11 @@ export type ShowcaseEntry = {
   galleryCount: number;
   /** Ids from src/lib/categories.ts. */
   categories: string[];
-  featured: { gallery: string; sourceUrl: string }[];
+  /**
+   * The first gallery page about it, linked only when the site has no live address. Gallery names
+   * stay out of the public data: the site doesn't credit galleries (showcase_features is internal).
+   */
+  sourceUrl: string | null;
 };
 
 // Images live only on Cloudflare Pages (scripts/cdn-sync.ts uploads them; free traffic). The
@@ -31,7 +35,7 @@ const imageUrl = (path: string) => `${path.startsWith("img/details/") ? DETAILS 
 // capture is recorded.
 const smallThumbUrl = (path: string | null) => (path ? `${THUMBS_SMALL}/${path}` : null);
 
-/** top: staff picks and sites featured by 2+ galleries · all: every live entry · archive: sites that are gone. */
+/** top: staff picks and sites featured by 2+ galleries (counted internally, not shown) · all: every live entry · archive: sites that are gone. */
 export type ShowcaseView = "top" | "all" | "archive";
 export const SHOWCASE_VIEWS: ShowcaseView[] = ["top", "all", "archive"];
 
@@ -62,7 +66,7 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
         staffPick: row.staff_pick,
         galleryCount: row.gallery_count,
         categories: row.categories,
-        featured: row.featured as ShowcaseEntry["featured"],
+        sourceUrl: (row.featured as { sourceUrl: string }[])[0]?.sourceUrl ?? null,
       }),
     ),
     total: Number(data[0]?.total ?? 0),
@@ -163,7 +167,7 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
       .select("id, name, url, platform, tags, thumb_path, staff_pick, gallery_count, categories, status, details")
       .eq("id", id)
       .maybeSingle(),
-    db.from("showcase_features").select("gallery, source_url").eq("item_id", id).order("first_seen"),
+    db.from("showcase_features").select("source_url").eq("item_id", id).order("first_seen").limit(1),
   ]);
   if (error) throw error;
   if (featuresError) throw featuresError;
@@ -180,7 +184,7 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
     staffPick: row.staff_pick,
     galleryCount: row.gallery_count,
     categories: row.categories,
-    featured: (features ?? []).map((f) => ({ gallery: f.gallery, sourceUrl: f.source_url })),
+    sourceUrl: features?.[0]?.source_url ?? null,
     status: row.status,
     details: d
       ? { full: imageUrl(d.full), fullHeight: d.fullHeight, pages: d.pages.map((p) => ({ url: p.url, title: p.title, imageUrl: imageUrl(p.path) })) }

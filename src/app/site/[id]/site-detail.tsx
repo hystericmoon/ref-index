@@ -19,9 +19,9 @@ export function hostOf(url: string) {
   }
 }
 
-/** One showcase site: its full home page and a few inner pages, with links to the site and the galleries. */
+/** One showcase site: its full home page and a few inner pages, with a link to the site. */
 export function SiteDetail({ item }: { item: ShowcaseItem }) {
-  const href = item.url ?? item.featured[0]?.sourceUrl;
+  const href = item.url ?? item.sourceUrl;
   const labels = item.categories.map((c) => CATEGORIES.find((x) => x.id === c)?.label).filter(Boolean);
   const d = item.details;
 
@@ -48,18 +48,6 @@ export function SiteDetail({ item }: { item: ShowcaseItem }) {
               </span>
             ))}
           </div>
-          <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
-            Featured on
-            {item.featured.map((f, i) => (
-              <span key={f.gallery} className="flex items-center gap-1.5">
-                {i > 0 && <span aria-hidden="true">·</span>}
-                <a href={f.sourceUrl} target="_blank" rel="noopener" className="py-1 font-medium text-link hover:underline">
-                  {f.gallery}
-                  <span className="sr-only"> (opens in a new tab)</span>
-                </a>
-              </span>
-            ))}
-          </p>
         </div>
         {href && (
           <a

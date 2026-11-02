@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { SITE_NAME } from "@/lib/brand";
 import { BackLink } from "./back-link";
 import { SiteDetail, hostOf, loadSite } from "./site-detail";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const item = await loadSite((await params).id);
   if (!item) return {};
-  const description = `${item.name}${item.url ? ` (${hostOf(item.url)})` : ""}, featured on ${item.featured.map((f) => f.gallery).join(", ")}.`;
+  const description = `${item.name}${item.url ? ` (${hostOf(item.url)})` : ""}: screenshots and pages, on ${SITE_NAME}.`;
   return {
     title: item.name,
     description,
