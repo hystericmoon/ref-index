@@ -417,3 +417,10 @@ _(ideas and out-of-scope items noted during sessions)_
 - Recheck of all 11,560 listed (`--recheck`, img/v3/, old kept when the new one shows less; tmp/run-recheck.sh),
   then every Top pick's details (tmp/run-details-recheck.sh, img/details/v3/). Batch 1: 379 of 400
   replaced, 20 kept, 1 parked. Open: confirm and unlist the dead sites the recheck finds.
+- Resume here (2026-11-03 06:25): batches 1-7 done (2,653 of 2,800 replaced). The rest runs detached from
+  any Claude session: tmp/run-all-rechecks.sh (thumbs recheck, then detail retakes; log tmp/recheck.log,
+  ends with "== done"). Both runners resume after a stop and pause 11:00-11:45 for the daily job. Rerun
+  with: Start-Process "C:\Program Files\Git\bin\bash.exe" /c/Projects/ref-index/tmp/run-all-rechecks.sh
+  When done: collect failures in tmp/showcase-recheck/*/results.ndjson (no DNS, 404/410, error page,
+  parked, bad certificate; not 403 or bot checks), retry them once, unlist what fails again (keep an undo
+  list), then write the final numbers here.
