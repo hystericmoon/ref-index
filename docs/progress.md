@@ -348,3 +348,13 @@ _(ideas and out-of-scope items noted during sessions)_
 - The 03:00 UTC refresh cron was on, but every save since 2026-10-30 hit the 8 s statement timeout:
   `add_showcase_entries` matched on lower(url)/lower(name) with no index (2 full scans of ~21k rows per
   entry). Added both expression indexes; a manual run then saved 38 new items and 45 credits.
+
+### Nine more galleries in the daily refresh (2026-11-02)
+- Added The FWA, Lapa Ninja, CSS Winner, Best Website Gallery, Dark Mode Design, Siiimple, Webdesign
+  Inspiration, SaaS Landing Page and Ecomm.design (29 checked; these are free, active, no paywall on entries
+  or live links). New entries only, no backfill.
+- Galleries that show the live link only on the entry page get `entryLive`; the refresh reads at most 30
+  new entry pages per gallery per run (known `source_url`s are skipped first). `?ref=` tags are stripped.
+- Dry run: 8 of 9 read, live links found on every sampled entry. Lapa Ninja answers 403 to scripts (curl
+  passes); kept in the list, not worked around. Later: CSS Nectar, Design Nominees, Framer Gallery, Admire
+  The Web, Curated.design, A1 Gallery (sitemap diffs); Webflow, Landingfolio, CSS Light (HTML scraping).

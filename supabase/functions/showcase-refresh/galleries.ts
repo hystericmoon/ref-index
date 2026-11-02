@@ -14,8 +14,9 @@ export type Gallery = {
    * links: external project links wrapping an <img …projects/…>.
    * captioned: an image link followed by a <p> caption (Brutalist Websites).
    * jsonld: schema.org list entries of type `jsonType` (Land-book listing pages).
+   * wpjson: a WordPress REST list with title.rendered, link and acf.website_url (Ecomm.design).
    */
-  kind: "rss" | "html" | "links" | "captioned" | "jsonld";
+  kind: "rss" | "html" | "links" | "captioned" | "jsonld" | "wpjson";
   item?: RegExp;
   /** Turn a feed title or link text into the site's name. */
   clean?: (title: string) => string;
@@ -33,6 +34,13 @@ export type Gallery = {
   liveFrom?: RegExp;
   jsonType?: string;
   limit?: number;
+  /**
+   * The live link is only on each entry's own page: capture it from that page (see resolveLive).
+   * `entryUrl` maps the entry to the page to read (an API), `entryBase64` decodes the capture.
+   */
+  entryLive?: RegExp;
+  entryUrl?: (src: string) => string;
+  entryBase64?: boolean;
 };
 
 const beforeTagline = (title: string) => title.split(/\s+[|–—-]\s+/)[0];
@@ -123,6 +131,50 @@ export const GALLERIES: Gallery[] = [
     nameFrom: /<h[3-6][^>]*>([\s\S]*?)<\/h[3-6]>/,
     itemIsLive: true,
     limit: 40,
+  },
+  // Added 2026-11-02: free galleries, still updating, entries and live links not paywalled.
+  {
+    name: "The FWA",
+    platform: "web",
+    kind: "rss",
+    listing: "https://thefwa.com/rss",
+    entryUrl: (src) => src.replace("thefwa.com/cases/", "thefwa.com/api/cases/"),
+    entryLive: /"url":"(https?:[^"]+)"/,
+  },
+  // Answered 403 to a script on 2026-11-02 (curl got through); kept, it's reported as skipped while blocked.
+  { name: "Lapa Ninja", platform: "web", kind: "rss", listing: "https://www.lapa.ninja/rss.xml", entryLive: /<a href="([^"]+)"[^>]*title="Visit [^"]*"/ },
+  { name: "CSS Winner", platform: "web", kind: "rss", listing: "https://www.csswinner.com/feed", entryLive: /<h1><a href="([^"]+)"/ },
+  {
+    name: "Best Website Gallery",
+    platform: "web",
+    kind: "rss",
+    listing: "https://bestwebsite.gallery/sites/rss.xml",
+    entryLive: /"click: view website \(external\)"[^>]*href="([^"]+)"/,
+  },
+  {
+    name: "Dark Mode Design",
+    platform: "web",
+    kind: "rss",
+    listing: "https://www.darkmodedesign.com/websites/rss.xml",
+    liveFrom: /<description>(https?:\/\/[^<\s]+)<\/description>/,
+  },
+  { name: "Siiimple", platform: "web", kind: "rss", listing: "https://siiimple.com/feed/", entryLive: /<a href="([^"]+)"[^>]*class="single-visit-btn"/ },
+  {
+    name: "Webdesign Inspiration",
+    platform: "web",
+    kind: "rss",
+    listing: "https://webdesign-inspiration.com/feed",
+    only: /<category>Web design<\/category>/,
+    clean: (t) => t.replace(/^webdesign:\s*/i, ""),
+    entryLive: /data-l="([^"]+)"[^>]*>\s*VISIT WEBSITE/i,
+    entryBase64: true,
+  },
+  { name: "SaaS Landing Page", platform: "web", kind: "rss", listing: "https://saaslandingpage.com/feed/", entryLive: /id="ext-link-\d+"[^>]*href="([^"]+)"/ },
+  {
+    name: "Ecomm.design",
+    platform: "web",
+    kind: "wpjson",
+    listing: "https://ecomm.design/wp-json/wp/v2/website?per_page=50&_fields=link,title,acf.website_url",
   },
 ];
 
@@ -235,6 +287,12 @@ export function parseGallery(gallery: Gallery, body: string, base = gallery.list
       if (hostOf(href) === home) add(href, name, null);
       else add(own ? new URL(decode(own), base).href : base, name, href);
     }
+  } else if (gallery.kind === "wpjson") {
+    type Post = { link?: string; title?: { rendered?: string }; acf?: { website_url?: string } };
+    for (const post of JSON.parse(body) as Post[]) {
+      const name = clean(decode(post.title?.rendered ?? "")).trim();
+      if (post.link && usable(name)) add(post.link, name, liveLink(post.acf?.website_url ?? ""));
+    }
   } else {
     // JSON-LD list entries: {"@type":"CreativeWork","name":"…","url":"…"}.
     const text = body.replace(/\\"/g, '"').replace(/\\\//g, "/");
@@ -250,6 +308,49 @@ export function parseGallery(gallery: Gallery, body: string, base = gallery.list
     }
   }
   return [...found.values()];
+}
+
+/** A gallery's outbound link as the site's own address: no ?ref= tags, no archive copies. */
+export function liveLink(raw: string): string | null {
+  try {
+    const url = new URL(decode(raw).replace(/\\\//g, "/"));
+    if (!/^https?:$/.test(url.protocol) || /(^|\.)web\.archive\.org$/.test(url.hostname)) return null;
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(ref|via|utm_.*|source)$/i.test(key)) url.searchParams.delete(key);
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fills in the live link of entries whose gallery only shows it on the entry's own page.
+ * Reads at most `perGallery` pages per gallery, one at a time with a pause, so a first run
+ * (every feed item new) stays small; later runs only see entries added since.
+ */
+export async function resolveLive(found: Found[], perGallery = 30, gapMs = 400) {
+  const byGallery = new Map<Gallery, Found[]>();
+  for (const item of found) {
+    const gallery = GALLERIES.find((g) => g.name === item.gallery);
+    if (!gallery?.entryLive || item.url) continue;
+    byGallery.set(gallery, [...(byGallery.get(gallery) ?? []), item]);
+  }
+  await Promise.all(
+    [...byGallery].map(async ([gallery, items]) => {
+      for (const item of items.slice(0, perGallery)) {
+        try {
+          const res = await fetch(gallery.entryUrl?.(item.src) ?? item.src, { headers: { "user-agent": USER_AGENT } });
+          if (res.status === 403 || res.status === 429) return;
+          const raw = res.ok ? (await res.text()).match(gallery.entryLive!)?.[1] : undefined;
+          if (raw) item.url = liveLink(gallery.entryBase64 ? atob(raw) : raw);
+        } catch {
+          // Network error: the entry is added without a live link, like a gallery page without one.
+        }
+        await new Promise((r) => setTimeout(r, gapMs));
+      }
+    }),
+  );
 }
 
 export async function readGallery(gallery: Gallery): Promise<Found[]> {
