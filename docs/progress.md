@@ -358,3 +358,14 @@ _(ideas and out-of-scope items noted during sessions)_
 - Dry run: 8 of 9 read, live links found on every sampled entry. Lapa Ninja answers 403 to scripts (curl
   passes); kept in the list, not worked around. Later: CSS Nectar, Design Nominees, Framer Gallery, Admire
   The Web, Curated.design, A1 Gallery (sitemap diffs); Webflow, Landingfolio, CSS Light (HTML scraping).
+
+### Resume here (paused 2026-11-02, 00:35 UTC)
+- Today's 03:00 UTC refresh will be skipped (12 h limit after the 2026-11-01 19:22 manual run), so the
+  nine new galleries first run 2026-11-03 03:00 UTC. Owner was asked whether to backdate the manual run's
+  `ran_at` instead; not done. Check: `select ran_at, report from showcase_refresh_runs order by ran_at desc limit 1`
+  (look for the new galleries' "N read" and `added`), then `tmp/daily-captures.log` after 11:30 local.
+- Daily chain on the PC: Task Scheduler "Openrefs daily captures" (11:30, Git Bash) installs the
+  Playwright browser, captures, then `cdn-sync.ts` uploads with CLOUDFLARE_API_TOKEN from .env.local.
+- Unconfirmed: the 187 unused detail images expected to be pruned; every sync so far printed "0 removed".
+- Lapa Ninja 403s scripts; if the first real run also shows "skipped (HTTP 403)", drop it.
+- Next candidates (owner's call): the six sitemap-diff galleries in the entry above.
