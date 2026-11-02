@@ -66,7 +66,7 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
         staffPick: row.staff_pick,
         galleryCount: row.gallery_count,
         categories: row.categories,
-        sourceUrl: (row.featured as { sourceUrl: string }[])[0]?.sourceUrl ?? null,
+        sourceUrl: row.url ? null : ((row.featured as { sourceUrl: string }[])[0]?.sourceUrl ?? null),
       }),
     ),
     total: Number(data[0]?.total ?? 0),
@@ -184,7 +184,7 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
     staffPick: row.staff_pick,
     galleryCount: row.gallery_count,
     categories: row.categories,
-    sourceUrl: features?.[0]?.source_url ?? null,
+    sourceUrl: row.url ? null : (features?.[0]?.source_url ?? null),
     status: row.status,
     details: d
       ? { full: imageUrl(d.full), fullHeight: d.fullHeight, pages: d.pages.map((p) => ({ url: p.url, title: p.title, imageUrl: imageUrl(p.path) })) }

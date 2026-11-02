@@ -379,7 +379,10 @@ _(ideas and out-of-scope items noted during sessions)_
     Style UI is NOT deployed; the 47 tools are NOT imported or screenshotted.
   - Owner chose to hide all gallery credits on the public site, keeping showcase_features internally
     (refresh dedupe, Top picks, curate page). Done in code, typecheck/lint pass, NOT checked in a browser.
-- To resume: check the page (pnpm dev: no "Featured on", gallery filter, "The galleries" footer or gallery
-  names), build, merge to main, push; then with the owner's OK: `supabase db push`, deploy showcase-refresh,
+- Checked in pnpm dev (2026-11-02): home, a site page and /showcase.json show no "Featured on", gallery
+  filter, "The galleries" footer or gallery names. /showcase.json still sent every item's gallery page
+  (`sourceUrl`, mostly awwwards.com); it is now sent only for sites with no live link, as its comment said.
+  lint, typecheck, build pass.
+- To resume: merge to main, push; then with the owner's OK: `supabase db push`, deploy showcase-refresh,
   import Style UI (or wait for the 03:00 UTC run), run capture-showcase.sh.
 - Also still open from the "Resume here" entry above (first run of the nine new galleries on 2026-11-03).
