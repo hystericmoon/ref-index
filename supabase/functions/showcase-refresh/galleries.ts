@@ -317,6 +317,9 @@ export function parseGallery(gallery: Gallery, body: string, base = gallery.list
   } else if (gallery.kind === "cards") {
     const page = gallery.pages?.find((p) => p.url === base);
     for (const m of body.matchAll(/<a\s[^>]*href="([^"]+)"[^>]*class="g4-card"[^>]*>([\s\S]*?)<\/a>/gi)) {
+      // Free tools only: Style UI also lists "Paid" and "Semi-free" ones.
+      const status = m[0].match(/data-status="([^"]*)"/)?.[1];
+      if (status && !/^free$/i.test(status.trim())) continue;
       // The visible title keeps the tool's own capitals; data-name is lowercased for search.
       const name = decode(m[2].match(/class="card-meta-title"[^>]*>([\s\S]*?)</)?.[1] ?? m[0].match(/data-name="([^"]+)"/)?.[1] ?? "");
       const url = liveLink(m[1]);
