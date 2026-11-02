@@ -28,8 +28,10 @@ export type Gallery = {
    * jsonld: schema.org list entries of type `jsonType` (Land-book listing pages).
    * wpjson: a WordPress REST list with title.rendered, link and acf.website_url (Ecomm.design).
    * cards: <a href=live class="g4-card" data-name=…> tiles on each of `pages` (Style UI).
+   * sitemap: entry pages matching `item`, newest <lastmod> first, for galleries with no feed. Needs
+   * `entryLive`; `entryName` when slugs aren't names.
    */
-  kind: "rss" | "html" | "links" | "captioned" | "jsonld" | "wpjson" | "cards";
+  kind: "rss" | "html" | "links" | "captioned" | "jsonld" | "wpjson" | "cards" | "sitemap";
   pages?: Page[];
   item?: RegExp;
   /** Turn a feed title or link text into the site's name. */
@@ -55,6 +57,8 @@ export type Gallery = {
   entryLive?: RegExp;
   entryUrl?: (src: string) => string;
   entryBase64?: boolean;
+  /** Capture the site's name from the entry page too (entries left unnamed are dropped). */
+  entryName?: RegExp;
 };
 
 const beforeTagline = (title: string) => title.split(/\s+[|–—-]\s+/)[0];
@@ -189,6 +193,50 @@ export const GALLERIES: Gallery[] = [
     platform: "web",
     kind: "wpjson",
     listing: "https://ecomm.design/wp-json/wp/v2/website?per_page=50&_fields=link,title,acf.website_url",
+  },
+  // Added 2026-11-02 (second set). A1 Gallery was left out: it lists Framer templates, not live sites.
+  {
+    name: "CSS Nectar",
+    platform: "web",
+    kind: "rss",
+    listing: "https://cssnectar.com/feed/?post_type=site",
+    entryLive: /href="([^"]+)" class="gray-btn"/,
+  },
+  {
+    name: "Design Nominees",
+    platform: "web",
+    kind: "rss",
+    listing: "https://feeds.feedburner.com/DesignNominees",
+    only: /designnominees\.com\/sites\//,
+    entryLive: /<a\s+href="([^"]+)"\s+class="website"/,
+  },
+  {
+    name: "Framer Gallery",
+    platform: "web",
+    kind: "html",
+    listing: "https://www.framer.com/community/gallery/",
+    item: /^https:\/\/www\.framer\.com\/community\/gallery\/(?!categories\/)[a-z0-9-]+\/$/,
+    live: true,
+  },
+  {
+    name: "Admire The Web",
+    platform: "web",
+    kind: "sitemap",
+    listing: "https://admiretheweb.com/sitemap.xml",
+    item: /^https:\/\/admiretheweb\.com\/inspiration\/(?!tag\/)[a-z0-9-]+\/$/,
+    entryLive: /<a href="(https?:\/\/[^"]+)" target="_blank">https?:\/\//,
+    entryName: /<h1[^>]*>([^<]+)<\/h1>/,
+    limit: 30,
+  },
+  {
+    name: "Curated",
+    platform: "web",
+    kind: "sitemap",
+    listing: "https://curated.design/sitemap-content.xml",
+    item: /^https:\/\/curated\.design\/sites\/s\/\d+\/$/,
+    entryLive: /<a href="([^"]+)" target="_blank" rel="noopener" class="text-sm/,
+    entryName: /<h1[^>]*>([^<]+)<\/h1>/,
+    limit: 30,
   },
   // A directory of UI libraries and design tools (MIT, github.com/miqdadbadjuber/style-ui). Each
   // section is its own category; `listing` is the first page.
@@ -327,6 +375,16 @@ export function parseGallery(gallery: Gallery, body: string, base = gallery.list
       add(base, name, url);
       if (page) Object.assign(found.get(url)!, { tags: [page.tag], category: page.category });
     }
+  } else if (gallery.kind === "sitemap") {
+    const entries = [...body.matchAll(/<url>([\s\S]*?)<\/url>/g)]
+      .map((m) => ({ loc: decode(m[1].match(/<loc>([\s\S]*?)<\/loc>/)?.[1] ?? ""), mod: m[1].match(/<lastmod>([^<]*)/)?.[1] ?? "" }))
+      .filter((e) => gallery.item!.test(e.loc))
+      .sort((a, b) => b.mod.localeCompare(a.mod));
+    for (const { loc } of entries) {
+      // Named from the entry page later when the slug is only a number.
+      const name = gallery.entryName ? "" : nameFromSlug(loc);
+      if (!found.has(loc)) found.set(loc, { gallery: gallery.name, name, src: loc, url: null, platform: gallery.platform });
+    }
   } else if (gallery.kind === "wpjson") {
     type Post = { link?: string; title?: { rendered?: string }; acf?: { website_url?: string } };
     for (const post of JSON.parse(body) as Post[]) {
@@ -382,8 +440,11 @@ export async function resolveLive(found: Found[], perGallery = 30, gapMs = 400) 
         try {
           const res = await fetch(gallery.entryUrl?.(item.src) ?? item.src, { headers: { "user-agent": USER_AGENT } });
           if (res.status === 403 || res.status === 429) return;
-          const raw = res.ok ? (await res.text()).match(gallery.entryLive!)?.[1] : undefined;
+          const page = res.ok ? await res.text() : "";
+          const raw = page.match(gallery.entryLive!)?.[1];
           if (raw) item.url = liveLink(gallery.entryBase64 ? atob(raw) : raw);
+          const name = gallery.entryName && decode(page.match(gallery.entryName)?.[1] ?? "");
+          if (name && usable(name)) item.name = name;
         } catch {
           // Network error: the entry is added without a live link, like a gallery page without one.
         }
@@ -391,6 +452,7 @@ export async function resolveLive(found: Found[], perGallery = 30, gapMs = 400) 
       }
     }),
   );
+  return found.filter((f) => f.name);
 }
 
 export async function readGallery(gallery: Gallery): Promise<Found[]> {

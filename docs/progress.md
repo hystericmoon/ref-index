@@ -388,3 +388,12 @@ _(ideas and out-of-scope items noted during sessions)_
   capture-showcase.sh batch 55 took 43 of 46. Still without a picture: Uiverse, MOTION.ED, Rare UI (one 429,
   two 403s), and Design MD (marked as tried before this run). The live site wasn't checked after the deploy.
 - Also still open from the "Resume here" entry above (first run of the nine new galleries on 2026-11-03).
+
+### Five more galleries, and where the missing pictures are (2026-11-02)
+- Added CSS Nectar (feed `?post_type=site`), Design Nominees (feedburner), Framer Gallery (listing page),
+  Admire The Web and Curated (new `sitemap` kind: newest <lastmod> first, 30 per run, names from the entry
+  page via `entryName`). A1 Gallery left out: it lists Framer templates. Dry run: all five read, live links
+  on 29 of 30 sampled entries. Committed; function NOT redeployed yet.
+- Backlog: 9,038 of 19,934 listed sites have no picture (hidden). 3,726 have no live link (3,474 from One
+  Page Love's backfill, whose entry pages do have it); 5,290 failed capture: dead DNS 1,564, 403 626,
+  404 488, blank 675, parked 438, timeouts 317. Biggest win: resolve One Page Love's live links, then capture.

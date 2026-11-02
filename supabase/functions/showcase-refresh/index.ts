@@ -36,8 +36,8 @@ Deno.serve(async () => {
     for (const row of data ?? []) known.add(row.source_url);
   }
   const found = all.filter((f) => !perEntry.has(f.gallery) || !known.has(f.src));
-  await resolveLive(found);
-  const { data: added, error } = await db.rpc("add_showcase_entries", { entries: found });
+  const entries = await resolveLive(found);
+  const { data: added, error } = await db.rpc("add_showcase_entries", { entries });
   const result = { report, read: all.length, added: added ?? null, error: error?.message ?? null };
   await db.from("showcase_refresh_runs").update({ report: result }).eq("id", run.id);
   return Response.json(result, { status: error ? 500 : 200 });
