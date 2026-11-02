@@ -27,6 +27,8 @@ const FROM_TAGS: Record<string, string> = {
   "long-form journalism": "editorial",
   "social impact": "impact",
   agency: "agency",
+  "ui library": "ui-kit",
+  "design tool": "design-tools",
 };
 
 // Phrases that contain a keyword but mean something else.

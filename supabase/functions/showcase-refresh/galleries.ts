@@ -3,7 +3,19 @@
 // Shared by the showcase-refresh Edge Function (Deno), scripts/refresh-showcase.ts and
 // scripts/backfill-showcase.ts (Node). The backfill reuses parseGallery on older pages.
 
-export type Found = { gallery: string; name: string; src: string; url: string | null; platform: string };
+export type Found = {
+  gallery: string;
+  name: string;
+  src: string;
+  url: string | null;
+  platform: string;
+  /** Set for galleries whose sections already say what a site is (Style UI). */
+  tags?: string[];
+  category?: string;
+};
+
+/** A listing page of a `cards` gallery, with the tag and category its section stands for. */
+export type Page = { url: string; tag: string; category: string };
 
 export type Gallery = {
   name: string;
@@ -15,8 +27,10 @@ export type Gallery = {
    * captioned: an image link followed by a <p> caption (Brutalist Websites).
    * jsonld: schema.org list entries of type `jsonType` (Land-book listing pages).
    * wpjson: a WordPress REST list with title.rendered, link and acf.website_url (Ecomm.design).
+   * cards: <a href=live class="g4-card" data-name=…> tiles on each of `pages` (Style UI).
    */
-  kind: "rss" | "html" | "links" | "captioned" | "jsonld" | "wpjson";
+  kind: "rss" | "html" | "links" | "captioned" | "jsonld" | "wpjson" | "cards";
+  pages?: Page[];
   item?: RegExp;
   /** Turn a feed title or link text into the site's name. */
   clean?: (title: string) => string;
@@ -176,6 +190,19 @@ export const GALLERIES: Gallery[] = [
     kind: "wpjson",
     listing: "https://ecomm.design/wp-json/wp/v2/website?per_page=50&_fields=link,title,acf.website_url",
   },
+  // A directory of UI libraries and design tools (MIT, github.com/miqdadbadjuber/style-ui). Each
+  // section is its own category; `listing` is the first page.
+  {
+    name: "Style UI",
+    platform: "web",
+    kind: "cards",
+    listing: "https://style.ai.id/ui-components",
+    pages: [
+      { url: "https://style.ai.id/ui-components", tag: "ui library", category: "ui-kit" },
+      { url: "https://style.ai.id/background-generator", tag: "design tool", category: "design-tools" },
+      { url: "https://style.ai.id/design-md", tag: "design tool", category: "design-tools" },
+    ],
+  },
 ];
 
 export const USER_AGENT = "RefIndex showcase refresh (names and links only; https://ref-index.vercel.app)";
@@ -287,6 +314,16 @@ export function parseGallery(gallery: Gallery, body: string, base = gallery.list
       if (hostOf(href) === home) add(href, name, null);
       else add(own ? new URL(decode(own), base).href : base, name, href);
     }
+  } else if (gallery.kind === "cards") {
+    const page = gallery.pages?.find((p) => p.url === base);
+    for (const m of body.matchAll(/<a\s[^>]*href="([^"]+)"[^>]*class="g4-card"[^>]*>([\s\S]*?)<\/a>/gi)) {
+      // The visible title keeps the tool's own capitals; data-name is lowercased for search.
+      const name = decode(m[2].match(/class="card-meta-title"[^>]*>([\s\S]*?)</)?.[1] ?? m[0].match(/data-name="([^"]+)"/)?.[1] ?? "");
+      const url = liveLink(m[1]);
+      if (!url || !usable(name) || hostOf(url) === hostOf(base)) continue;
+      add(base, name, url);
+      if (page) Object.assign(found.get(url)!, { tags: [page.tag], category: page.category });
+    }
   } else if (gallery.kind === "wpjson") {
     type Post = { link?: string; title?: { rendered?: string }; acf?: { website_url?: string } };
     for (const post of JSON.parse(body) as Post[]) {
@@ -354,6 +391,15 @@ export async function resolveLive(found: Found[], perGallery = 30, gapMs = 400) 
 }
 
 export async function readGallery(gallery: Gallery): Promise<Found[]> {
+  if (gallery.pages) {
+    const found: Found[] = [];
+    for (const page of gallery.pages) {
+      const res = await fetch(page.url, { headers: { "user-agent": USER_AGENT } });
+      if (!res.ok) throw new Error(`HTTP ${res.status} on ${page.url}`);
+      found.push(...parseGallery(gallery, await res.text(), page.url));
+    }
+    return found.slice(0, gallery.limit ?? 200);
+  }
   const res = await fetch(gallery.listing, { headers: { "user-agent": USER_AGENT } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return parseGallery(gallery, await res.text(), res.url || gallery.listing).slice(0, gallery.limit ?? 100);

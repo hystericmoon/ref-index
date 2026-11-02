@@ -12,6 +12,9 @@ export const CATEGORIES: Category[] = [
   { id: "shop", label: "E-commerce", group: "type", words: /\b(shop|store|add to cart|free shipping|buy now|shop now|online store|e-?commerce|new arrivals)\b/i },
   { id: "editorial", label: "Editorial & blog", group: "type", words: /\b(magazine|journal|blog|editorial|publication|podcast|news|articles)\b/i },
   { id: "event", label: "Events", group: "type", words: /\b(conference|festival|summit|tickets|exhibition|meetup|awards? (night|ceremony)|register now|expo)\b/i },
+  // Grouped like Style UI (style.ai.id), the directory these come from.
+  { id: "ui-kit", label: "UI libraries & components", group: "type", words: /\b(component librar(y|ies)|ui (kit|library|components)|copy[- ](and|&)[- ]paste components|animated components|shadcn)\b/i },
+  { id: "design-tools", label: "Design tools", group: "type", words: /\b(background generator|gradient generator|mesh gradients?|design\.md)\b/i },
   // What field it's in
   { id: "ai", label: "AI", group: "industry", words: /\b(ai|a\.i\.|artificial intelligence|machine learning|llms?|gpt|ai agents?|generative)\b/i },
   { id: "finance", label: "Finance", group: "industry", words: /\b(fintech|bank(ing)?|payments?|invest(ing|ment)?|finance|financial|money|credit card|accounting|insurance)\b/i },
