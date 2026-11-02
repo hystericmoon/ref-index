@@ -383,6 +383,8 @@ _(ideas and out-of-scope items noted during sessions)_
   filter, "The galleries" footer or gallery names. /showcase.json still sent every item's gallery page
   (`sourceUrl`, mostly awwwards.com); it is now sent only for sites with no live link, as its comment said.
   lint, typecheck, build pass.
-- To resume: merge to main, push; then with the owner's OK: `supabase db push`, deploy showcase-refresh,
-  import Style UI (or wait for the 03:00 UTC run), run capture-showcase.sh.
+- Shipped 2026-11-02: merged to main and pushed (71cb9ae); migration 20261102000200 applied;
+  showcase-refresh redeployed with Style UI; Style UI imported on its own (47: 38 ui-kit, 9 design-tools);
+  capture-showcase.sh batch 55 took 43 of 46. Still without a picture: Uiverse, MOTION.ED, Rare UI (one 429,
+  two 403s), and Design MD (marked as tried before this run). The live site wasn't checked after the deploy.
 - Also still open from the "Resume here" entry above (first run of the nine new galleries on 2026-11-03).
