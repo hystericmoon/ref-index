@@ -10,6 +10,12 @@
 // --banners <ids file> retakes only those items whose page shows a banner right now (others are
 // logged as "no banner" and left alone), for clearing banners out of older screenshots.
 //
+// Intros and loaders: after the first wait, the screen is checked every second (up to --settle-max,
+// default 12 s more) until nothing reads "loading", the middle of the screen isn't empty and two
+// checks in a row look the same (scripts/screen.ts). The browser uses the GPU, so WebGL heroes render as they do for
+// visitors. --recheck <ids file> retakes those items and keeps the old screenshot when the new one
+// shows less, for clearing intros, loaders and banners out of older screenshots.
+//
 // Run:  node scripts/capture-showcase.ts --out tmp/showcase-thumbs/batch-1 --limit 500
 // Then: node scripts/cdn-sync.ts --add <out> (uploads to Cloudflare Pages; files land at
 // img/<id>.webp) and scripts/showcase-thumbs-sql.ts. scripts/capture-showcase.sh does all three.
@@ -21,6 +27,7 @@ import { join } from "node:path";
 import { chromium, type BrowserContext } from "playwright";
 import sharp from "sharp";
 import { blockConsent, hideBanners, type Box } from "./consent.ts";
+import { BROWSER_ARGS, ERROR_PAGE, waitForScreen } from "./screen.ts";
 
 type Item = { id: string; url: string; thumb_path?: string | null };
 
@@ -44,17 +51,19 @@ const workers = Number(arg("workers", "6"));
 // Retakes: --ids <file> (one item id per line) recaptures those items even if tried before, and
 // --wait <ms> gives slow intros and loaders longer to finish (default 2.5 s).
 const bannersOnly = process.argv.includes("--banners");
-const idsFile = arg("ids", "") || arg("banners", "");
+const recheck = process.argv.includes("--recheck");
+const idsFile = arg("ids", "") || arg("banners", "") || arg("recheck", "");
 const settle = Number(arg("wait", "2500"));
+const settleMax = Number(arg("settle-max", "12000"));
 // --shot <ms> gives heavy pages longer to paint the 2x screenshot (default 15 s).
 const shotTimeout = Number(arg("shot", "15000"));
 // A page that never settles is dropped after this long (90 s with the defaults).
-const giveUp = 72_500 + settle + shotTimeout;
+const giveUp = 72_500 + settle + settleMax + shotTimeout;
 const width = Number(arg("width", "1280"));
 const quality = Number(arg("quality", "72"));
 // Retakes are saved under img/r/ so the new file gets a new address (the old one is cached for a year).
 // --prefix <folder> picks another one, e.g. --prefix v2 for the sharper recapture (img/v2/).
-const prefix = arg("prefix", bannersOnly ? "c" : idsFile ? "r" : "");
+const prefix = arg("prefix", bannersOnly ? "c" : recheck ? "v3" : idsFile ? "r" : "");
 const imgDir = join(out, "img", prefix);
 mkdirSync(imgDir, { recursive: true });
 
@@ -78,8 +87,8 @@ if (idsFile) {
       headers: { apikey: key },
     });
     if (!response.ok) throw new Error(`Couldn't read showcase items: ${response.status}`);
-    // A banner retake only replaces a screenshot that exists (archived sites have none).
-    items.push(...((await response.json()) as Item[]).filter((it) => /^https?:\/\//.test(it.url) && (!bannersOnly || it.thumb_path)));
+    // A banner retake or recheck only replaces a screenshot that exists (archived sites have none).
+    items.push(...((await response.json()) as Item[]).filter((it) => /^https?:\/\//.test(it.url) && (!(bannersOnly || recheck) || it.thumb_path)));
   }
 }
 for (let from = 0; !idsFile && items.length < limit; from += 1000) {
@@ -134,22 +143,29 @@ async function capture(context: BrowserContext, item: Item): Promise<{ failure: 
     const boxes = await hideBanners(page);
     banners = boxes.length;
     if (banners) await page.waitForTimeout(400);
+    await waitForScreen(page, settleMax);
+    // Banners that came in late, while the intro played.
+    const late = await hideBanners(page);
+    boxes.push(...late);
+    banners = boxes.length;
+    if (late.length) await page.waitForTimeout(400);
     const title = await page.title().catch(() => "");
     const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
     if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return fail("bot check page");
     if (PARKED.test(title) || PARKED.test(text)) return fail("parked or replaced domain");
+    if (ERROR_PAGE.test(title) || (text.length < 400 && ERROR_PAGE.test(text))) return fail("error page");
     if (NETWORK_BLOCK.test(title) || NETWORK_BLOCK.test(text)) return fail(BLOCKED_HERE);
     const shot = await page.screenshot({ type: "png", timeout: shotTimeout });
     const stats = await sharp(shot).stats();
     if (stats.channels.slice(0, 3).every((c) => c.stdev < 3)) return fail("blank screen");
     // smartSubsample keeps small coloured text from smearing.
     const webp = await sharp(shot).resize({ width }).webp({ quality, smartSubsample: true, effort: 5 }).toBuffer();
-    // A banner retake can catch an intro or loader the old screenshot had got past. If the rest of
+    // A banner retake or recheck can catch an intro or loader the old screenshot had got past. If the rest of
     // the screen (the banner's area is blacked out in both) shows much less than the old screenshot
     // in the local mirror (cdn/openrefs-thumbs), the old one stays. Buffers, not paths: sharp keeps
     // files open on Windows.
     const old = join("cdn", "openrefs-thumbs", item.thumb_path ?? "");
-    if (bannersOnly && item.thumb_path && existsSync(old)) {
+    if ((bannersOnly || recheck) && item.thumb_path && existsSync(old)) {
       const [before, after] = await Promise.all([outsideBanners(readFileSync(old), boxes), outsideBanners(webp, boxes)]);
       // (Near-empty pages, like a plain black screen, have nothing to lose.)
       if (before > 0.5 && after < before * 0.8) {
@@ -168,11 +184,14 @@ async function capture(context: BrowserContext, item: Item): Promise<{ failure: 
   }
 }
 
-const browser = await chromium.launch({ args: ["--mute-audio"] });
+// The GPU renders WebGL heroes; the software renderer often leaves them blank or half drawn.
+const gpu = process.platform === "win32" ? ["--use-angle=d3d11", "--enable-gpu", "--ignore-gpu-blocklist"] : [];
+const browser = await chromium.launch({ args: ["--mute-audio", ...gpu] });
 const context = await browser.newContext({
   viewport: { width: 1280, height: 800 },
   deviceScaleFactor: 2,
-  reducedMotion: "reduce",
+  // Reduced motion keeps many video heroes paused on a black frame; waitForScreen waits out the motion.
+  reducedMotion: "no-preference",
   locale: "en-US",
 });
 context.setDefaultNavigationTimeout(30_000);

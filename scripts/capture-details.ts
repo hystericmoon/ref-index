@@ -9,7 +9,8 @@
 // under img/details/<folder>/ so the new files get new addresses (old ones are cached for a year).
 // Same rules as capture-showcase.ts: only the
 // sites' own pages are visited, and bot checks, errors and blank screens are skipped, never
-// worked around. Cookie banners are kept out the same way too (scripts/consent.ts).
+// worked around. Cookie banners and pop-ups are kept out the same way too (scripts/consent.ts), and
+// each page waits out its intro or loader on the GPU like the home screenshot (scripts/screen.ts).
 //
 // Run:  node scripts/capture-details.ts --out tmp/showcase-details/batch-1 --limit 200
 // Then: node scripts/cdn-sync.ts --add <out> (uploads to Cloudflare Pages) and
@@ -20,6 +21,7 @@ import { join } from "node:path";
 import { chromium, type BrowserContext, type Page } from "playwright";
 import sharp from "sharp";
 import { blockConsent, hideBanners } from "./consent.ts";
+import { BROWSER_ARGS, ERROR_PAGE, waitForScreen } from "./screen.ts";
 
 type Item = { id: string; url: string };
 export type DetailPage = { path: string; url: string; title: string };
@@ -104,11 +106,15 @@ async function open(page: Page, url: string): Promise<string | null> {
   if (response && response.status() >= 400) return `status ${response.status()}`;
   await page.waitForTimeout(2000);
   if ((await hideBanners(page)).length) await page.waitForTimeout(400);
+  await waitForScreen(page, 12_000);
+  // Banners that came in late, while the intro played.
+  if ((await hideBanners(page)).length) await page.waitForTimeout(400);
   const title = await page.title().catch(() => "");
   const text = (await page.locator("body").innerText({ timeout: 3_000 }).catch(() => "")).slice(0, 1500);
   if (BOT_CHECK.test(title) || BOT_CHECK.test(text.slice(0, 400))) return "bot check page";
   if (NETWORK_BLOCK.test(title) || NETWORK_BLOCK.test(text)) return "blocked on this network";
   if (PARKED.test(title) || PARKED.test(text)) return REPLACED;
+  if (ERROR_PAGE.test(title) || (text.length < 400 && ERROR_PAGE.test(text))) return "error page";
   return null;
 }
 
@@ -140,6 +146,8 @@ async function capture(context: BrowserContext, item: Item): Promise<DetailResul
       await new Promise((r) => setTimeout(r, 600));
       return Math.min(document.documentElement.scrollHeight, max);
     }, MAX_HEIGHT);
+    // Pop-ups that open once the visitor scrolls.
+    if ((await hideBanners(page)).length) await page.waitForTimeout(400);
     const full = await page.screenshot({ type: "png", fullPage: height > 800, clip: height > 800 ? { x: 0, y: 0, width: 1280, height } : undefined, timeout: 60_000 });
     if (!(await save(full, join(dir, "full.webp"), FULL_WIDTH))) return { id: item.id, ok: false, reason: "blank screen" };
 
@@ -193,11 +201,12 @@ async function capture(context: BrowserContext, item: Item): Promise<DetailResul
   }
 }
 
-const browser = await chromium.launch({ args: ["--mute-audio"] });
+const browser = await chromium.launch({ args: BROWSER_ARGS });
 const context = await browser.newContext({
   viewport: { width: 1280, height: 800 },
   deviceScaleFactor: 2,
-  reducedMotion: "reduce",
+  // Reduced motion keeps many video heroes paused on a black frame; waitForScreen waits out the motion.
+  reducedMotion: "no-preference",
   locale: "en-US",
 });
 context.setDefaultNavigationTimeout(30_000);
@@ -213,7 +222,7 @@ await Promise.all(
       let timer: ReturnType<typeof setTimeout> | undefined;
       const result = await Promise.race([
         capture(context, item),
-        new Promise<DetailResult>((resolve) => (timer = setTimeout(() => resolve({ id: item.id, ok: false, reason: "gave up after 240 s" }), 240_000))),
+        new Promise<DetailResult>((resolve) => (timer = setTimeout(() => resolve({ id: item.id, ok: false, reason: "gave up after 300 s" }), 300_000))),
       ]);
       clearTimeout(timer);
       appendFileSync(join(out, "results.ndjson"), JSON.stringify(result) + "\n");

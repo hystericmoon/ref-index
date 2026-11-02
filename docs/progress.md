@@ -406,3 +406,14 @@ _(ideas and out-of-scope items noted during sessions)_
   competing on slow 4G). Runs taken while captures use the CPU read 55-76: measure with the PC idle.
 - Later: daily captures still need this PC (no browser in Edge Functions; cdn-sync deploys the whole local
   cdn/ mirror), so moving them to CI means moving images to R2 first.
+
+### Screenshots retaken: intros, loaders, video heroes and pop-ups (2026-11-03)
+- Many "empty middle" cards were the capture, not the site: a fixed 2.5 s wait caught intros and
+  "Loading 100%" counters, reduced motion kept video heroes paused on black, and WebGL ran on the software
+  renderer. Captures now use the GPU and normal motion and wait (scripts/screen.ts) until nothing reads
+  "loading", the middle isn't empty and the screen holds still (up to 12 s more). Error pages ("Unexpected
+  Server Error", "Bad Gateway", host 404s) now fail; newsletter and offer pop-ups are removed with banners.
+  Both capture-showcase.ts and capture-details.ts.
+- Recheck of all 11,560 listed (`--recheck`, img/v3/, old kept when the new one shows less; tmp/run-recheck.sh),
+  then every Top pick's details (tmp/run-details-recheck.sh, img/details/v3/). Batch 1: 379 of 400
+  replaced, 20 kept, 1 parked. Open: confirm and unlist the dead sites the recheck finds.

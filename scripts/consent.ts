@@ -1,7 +1,8 @@
 // Keeps cookie and consent banners out of captures without answering them: nothing is accepted or
 // declined. blockConsent() stops the common consent platforms from loading, so most banners never
 // appear; hideBanners() then removes what's left on screen: known banner boxes plus any fixed box
-// that talks about cookies, and the dimmed backdrop and scroll lock some of them add.
+// that talks about cookies, newsletter and offer pop-ups, and the dimmed backdrop and scroll lock
+// some of them add.
 // Used by capture-showcase.ts and capture-details.ts.
 
 import type { BrowserContext, Page } from "playwright";
@@ -65,6 +66,17 @@ export async function hideBanners(page: Page, remove = true): Promise<Box[]> {
           const consentFrame = [...el.querySelectorAll("iframe")].some((f) => /consent|cookie|privacy-mgmt|trustarc|sp_message/i.test(f.src + f.id + f.title));
           if (!consentFrame && (text.length > 1500 || !words.test(text) || !answer.test(text) || !el.querySelector("button, a, [role='button']"))) continue;
           if (onScreen(el)) found.add(el);
+        }
+        // Newsletter and offer pop-ups: a fixed box (not a header or a slim promo bar) that asks for
+        // an email or can be closed, and talks about signing up or a deal.
+        const promo = /\b(newsletter|subscribe|sign up|signup|join (us|our|the)|stay (in the loop|updated|in touch)|\d+\s?% off|discount|free shipping|months? free|special offer|don.t miss|inscri|abonn|anmelden|rabatt|descuento|sconto)\b|скидк|подпис|рассылк/i;
+        const close = "[aria-label*='close' i], [aria-label*='dismiss' i], [class*='close' i], [data-dismiss], button[title*='close' i]";
+        for (const el of document.body?.querySelectorAll("*") ?? []) {
+          const s = getComputedStyle(el);
+          if (s.position !== "fixed" || el.closest("header, nav") || [...found].some((f) => f.contains(el) || el.contains(f))) continue;
+          const text = (el as HTMLElement).innerText ?? "";
+          if (text.length > 600 || !promo.test(text) || !el.querySelector(`input[type='email'], ${close}`)) continue;
+          if (el.getBoundingClientRect().height > 120 && onScreen(el)) found.add(el);
         }
         const boxes = [...found].map((el) => {
           const r = el.getBoundingClientRect();
