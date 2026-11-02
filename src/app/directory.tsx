@@ -138,12 +138,18 @@ const ShowcaseCard = memo(function ShowcaseCard({
   editor,
   onHidden,
   first,
+  lead,
 }: {
   entry: ShowcaseEntry;
   editor: boolean;
   onHidden: (id: string) => void;
   /** In the first row on a wide screen: loaded right away instead of when scrolled near. */
   first: boolean;
+  /**
+   * The very first card: its picture is the page's largest paint on phones (one column), so only
+   * it gets high priority; the rest of the row would compete with it on a slow connection.
+   */
+  lead: boolean;
 }) {
   const href = e.url ?? e.sourceUrl ?? undefined;
   const router = useRouter();
@@ -174,7 +180,7 @@ const ShowcaseCard = memo(function ShowcaseCard({
           width={1280}
           height={800}
           loading={first ? "eager" : "lazy"}
-          fetchPriority={first ? "high" : "auto"}
+          fetchPriority={lead ? "high" : "auto"}
           decoding="async"
           className="size-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
         />
@@ -345,6 +351,7 @@ function ShowcaseView({
               key={e.id}
               entry={e}
               first={i < 5}
+              lead={i === 0}
               editor={editor}
               onHidden={onHidden}
             />
