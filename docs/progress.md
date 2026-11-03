@@ -450,4 +450,4 @@ _(ideas and out-of-scope items noted during sessions)_
 - Focus returns to the card after a panel closes (detail-sheet.tsx).
 - Roving grid (directory.tsx useRovingGrid): the cards are one tab stop in total; arrows, Home and End move between them.
 - Cache: POST /api/revalidate clears the showcase cache; run `node --env-file=.env.local scripts/clear-cache.ts` after
-  bulk unlists/imports. Needs REVALIDATE_SECRET in .env.local AND in Vercel (not set yet: until then it answers 503).
+  bulk unlists/imports. Needs REVALIDATE_SECRET in .env.local AND in Vercel (set 2026-11-03; live call returned 200).
