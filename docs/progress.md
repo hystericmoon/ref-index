@@ -451,3 +451,7 @@ _(ideas and out-of-scope items noted during sessions)_
 - Roving grid (directory.tsx useRovingGrid): the cards are one tab stop in total; arrows, Home and End move between them.
 - Cache: POST /api/revalidate clears the showcase cache; run `node --env-file=.env.local scripts/clear-cache.ts` after
   bulk unlists/imports. Needs REVALIDATE_SECRET in .env.local AND in Vercel (set 2026-11-03; live call returned 200).
+- Resume here (2026-11-03, after the tab-stop work): nothing is running in the background; everything is pushed.
+  The 2026-11-03 "Resume here" items (live check, tab stops) are done. Left, none started: the "Later" list (line ~178)
+  and pictures for sites that fail with 403/429. Not checked: closing a panel with the x button or backdrop still
+  returns focus to the card (only Escape was tried). After any bulk unlist/import, run scripts/clear-cache.ts.
