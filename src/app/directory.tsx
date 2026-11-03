@@ -166,7 +166,7 @@ const ShowcaseCard = memo(function ShowcaseCard({
       onFocus={prefetch}
       scroll={false}
       aria-label={`${e.name}: full page and inner pages`}
-      className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted"
+      className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
     >
       {e.thumbUrl ? (
         // A plain img: next/image doesn't take a hand-written srcSet. Cards are ~290-420 CSS px wide
@@ -206,6 +206,9 @@ const ShowcaseCard = memo(function ShowcaseCard({
             href={href}
             target="_blank"
             rel="noopener"
+            // One tab stop per card: the picture link above is it, and its panel links to the live site.
+            // Pointer and screen-reader users still reach this link directly.
+            tabIndex={-1}
             className="flex min-h-11 items-center font-semibold tracking-tight break-words hover:underline focus-visible:underline sm:min-h-0"
           >
             {e.name}

@@ -440,3 +440,12 @@ _(ideas and out-of-scope items noted during sessions)_
   (see the 2026-11-02 "Still open" note): each card should be one tab stop or a short roving set, with
   visible focus; the top row of pictures loads lazily (check LCP priority too). lint, typecheck, build must
   pass; check in pnpm dev with keyboard only. Not in scope: pictures for 403/429 sites, the "Later" list.
+
+### Live check and one tab stop per card (2026-11-03)
+- Live site checked: home, a /site/[id] page and /showcase.json show no "Featured on" or gallery names; all 20 unlisted
+  ids return 404 and the counts read 11,540. One cached search page still said 11,560 (cache from before the unlist,
+  10 min); fresh queries give 11,540. Unlisting by SQL doesn't clear the "showcase" cache by itself.
+- Cards: the name link has tabIndex -1, so each card is one tab stop (the picture link, now with a focus ring); its panel
+  has "Visit site". 60 cards = 60 stops (was 120). LCP: first 5 pictures are eager, the first high priority; no change.
+- Open: after Escape closes a panel, focus drops to the page top instead of the card; a roving grid would cut the
+  stops on long lists further.
