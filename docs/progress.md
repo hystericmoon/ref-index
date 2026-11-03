@@ -424,3 +424,12 @@ _(ideas and out-of-scope items noted during sessions)_
   When done: collect failures in tmp/showcase-recheck/*/results.ndjson (no DNS, 404/410, error page,
   parked, bad certificate; not 403 or bot checks), retry them once, unlist what fails again (keep an undo
   list), then write the final numbers here.
+- Recheck finished (2026-11-03, `== done` 15:50). Thumbnails: 10,905 of 11,560 replaced, 655 kept as they were
+  (492 "looks emptier", 51 blank, 51 status 403/402/429/5xx, rest timeouts, bot checks, network blocks). Top pick
+  details (img/details/v3/): 1,703 of 1,866 retaken, 163 failed.
+- Dead sites: 160 candidates (no DNS, 404/410, error page, parked, bad certificate; 137 of them were detail
+  "no DNS" failures from a network blip). Retried once (tmp/dead-retry/): 135 loaded, 5 failed for other
+  reasons (blank, 503) and stay listed, 20 failed again. Those 20 are now status 'hidden' (none was a staff pick);
+  listed 11,540, hidden 9,478. Undo: tmp/unlisted-2026-11-03-undo.sql (ids in .txt, previous state in .json).
+  Not touched: 403, bot check, timeouts, "looks emptier", odd SSL errors (unrecognized name, cipher mismatch).
+- Still open: the older "Later" items and the pictures still missing for sites that fail with 403 or 429.
