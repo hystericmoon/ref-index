@@ -14,6 +14,9 @@ const EXIT_MS = 300;
 export function DetailSheet({ id, title, children }: { id: string; title: ReactNode; children: ReactNode }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
+  // The card link that opened the panel isn't a Dialog.Trigger, so Radix can't hand focus back to it.
+  // Read before the dialog moves focus into itself.
+  const [opener] = useState(() => (typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null)));
 
   function close() {
     setOpen(false);
@@ -26,6 +29,12 @@ export function DetailSheet({ id, title, children }: { id: string; title: ReactN
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:duration-500" />
         <Dialog.Content
           aria-describedby={undefined}
+          onCloseAutoFocus={(e) => {
+            if (opener?.isConnected && opener !== document.body) {
+              e.preventDefault();
+              opener.focus();
+            }
+          }}
           className="fixed inset-x-0 top-3 bottom-0 z-50 flex flex-col overflow-hidden rounded-t-3xl border-t bg-background shadow-2xl outline-none ease-[cubic-bezier(0.32,0.72,0,1)] data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=closed]:duration-300 data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=open]:duration-500 motion-reduce:data-[state=closed]:fade-out-0 motion-reduce:data-[state=open]:fade-in-0 sm:top-5"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b px-4 py-2 sm:px-6 lg:px-10">

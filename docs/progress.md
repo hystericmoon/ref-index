@@ -447,5 +447,5 @@ _(ideas and out-of-scope items noted during sessions)_
   10 min); fresh queries give 11,540. Unlisting by SQL doesn't clear the "showcase" cache by itself.
 - Cards: the name link has tabIndex -1, so each card is one tab stop (the picture link, now with a focus ring); its panel
   has "Visit site". 60 cards = 60 stops (was 120). LCP: first 5 pictures are eager, the first high priority; no change.
-- Open: after Escape closes a panel, focus drops to the page top instead of the card; a roving grid would cut the
+- Focus returns to the card after a panel closes (detail-sheet.tsx). Open: a roving grid would cut the
   stops on long lists further.
