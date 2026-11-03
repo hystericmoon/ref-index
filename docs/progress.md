@@ -433,3 +433,10 @@ _(ideas and out-of-scope items noted during sessions)_
   listed 11,540, hidden 9,478. Undo: tmp/unlisted-2026-11-03-undo.sql (ids in .txt, previous state in .json).
   Not touched: 403, bot check, timeouts, "looks emptier", odd SSL errors (unrecognized name, cipher mismatch).
 - Still open: the older "Later" items and the pictures still missing for sites that fail with 403 or 429.
+- Resume here (2026-11-03, after the recheck and dead-site cleanup): nothing is running in the background.
+  Next, in order: (1) check the live site https://ref-index.vercel.app in a browser (home, a /site/[id] page,
+  /showcase.json; no "Featured on" or gallery names; the 20 unlisted sites are gone from search); not yet done
+  since the 2026-11-02 Style UI deploy. (2) Fix the "about 350 Tab stops on a page of cards" accessibility issue
+  (see the 2026-11-02 "Still open" note): each card should be one tab stop or a short roving set, with
+  visible focus; the top row of pictures loads lazily (check LCP priority too). lint, typecheck, build must
+  pass; check in pnpm dev with keyboard only. Not in scope: pictures for 403/429 sites, the "Later" list.
