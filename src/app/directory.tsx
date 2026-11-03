@@ -232,6 +232,44 @@ const ShowcaseCard = memo(function ShowcaseCard({
   );
 });
 
+const CARD_LINK = "li > a[href^='/site/']";
+
+/**
+ * Roving tab stop for the card grid: Tab enters on one card and leaves the grid in the next press;
+ * arrow keys, Home and End move between cards. Done on the DOM so the memoized cards don't re-render.
+ */
+function useRovingGrid(grid: React.RefObject<HTMLUListElement | null>, items: unknown) {
+  useEffect(() => {
+    const links = Array.from(grid.current?.querySelectorAll<HTMLAnchorElement>(CARD_LINK) ?? []);
+    const current = links.find((l) => l.tabIndex === 0) ?? links[0];
+    for (const l of links) l.tabIndex = l === current ? 0 : -1;
+  }, [grid, items]);
+
+  const onFocus = useCallback((e: React.FocusEvent<HTMLUListElement>) => {
+    const target = e.target as HTMLElement;
+    if (!target.matches(CARD_LINK)) return;
+    for (const l of e.currentTarget.querySelectorAll<HTMLElement>(CARD_LINK)) l.tabIndex = l === target ? 0 : -1;
+  }, []);
+
+  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLUListElement>) => {
+    const target = e.target as HTMLElement;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || !target.matches(CARD_LINK)) return;
+    const links = Array.from(e.currentTarget.querySelectorAll<HTMLElement>(CARD_LINK));
+    const at = links.indexOf(target);
+    const columns = Math.max(1, links.filter((l) => l.closest("li")!.offsetTop === links[0].closest("li")!.offsetTop).length);
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns }[e.key];
+    let next: number | undefined;
+    if (step !== undefined) next = Math.min(Math.max(at + step, 0), links.length - 1);
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = links.length - 1;
+    if (next === undefined) return;
+    e.preventDefault();
+    links[next].focus();
+  }, []);
+
+  return { onFocus, onKeyDown };
+}
+
 const CURATION_LABEL: Record<Curation, string> = { top: "Top picks", all: "Everything", archive: "Archive" };
 const CURATION_NOTE: Record<Curation, string> = {
   top: "Staff picks and the sites design curators pick most.",
@@ -302,6 +340,8 @@ function ShowcaseView({
   }, [curation, q, category]);
 
   const list = entries;
+  const gridRef = useRef<HTMLUListElement>(null);
+  const roving = useRovingGrid(gridRef, list);
 
   return (
     <div className="flex flex-col gap-5" aria-busy={loading}>
@@ -348,7 +388,7 @@ function ShowcaseView({
           Nothing matches. Try a broader word or clear the filters.
         </p>
       ) : (
-        <ul className="grid gap-x-4 gap-y-6 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
+        <ul ref={gridRef} {...roving} className="grid gap-x-4 gap-y-6 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
           {list.map((e, i) => (
             <ShowcaseCard
               key={e.id}

@@ -447,5 +447,7 @@ _(ideas and out-of-scope items noted during sessions)_
   10 min); fresh queries give 11,540. Unlisting by SQL doesn't clear the "showcase" cache by itself.
 - Cards: the name link has tabIndex -1, so each card is one tab stop (the picture link, now with a focus ring); its panel
   has "Visit site". 60 cards = 60 stops (was 120). LCP: first 5 pictures are eager, the first high priority; no change.
-- Focus returns to the card after a panel closes (detail-sheet.tsx). Open: a roving grid would cut the
-  stops on long lists further.
+- Focus returns to the card after a panel closes (detail-sheet.tsx).
+- Roving grid (directory.tsx useRovingGrid): the cards are one tab stop in total; arrows, Home and End move between them.
+- Cache: POST /api/revalidate clears the showcase cache; run `node --env-file=.env.local scripts/clear-cache.ts` after
+  bulk unlists/imports. Needs REVALIDATE_SECRET in .env.local AND in Vercel (not set yet: until then it answers 503).
