@@ -501,3 +501,14 @@ _(ideas and out-of-scope items noted during sessions)_
   blocked (10 x 429, 1 x 403). Nothing changed.
 - Resume here (2026-11-04): nothing running; everything pushed. Next is step 4 or 7 (need the owner's
   choice), or first fix the refresh function (slices) since it blocks new galleries.
+
+### Refresh in slices, GradientDeck UI imported (2026-11-04)
+- Refresh fix deployed: `showcase-refresh?slice=0..5` reads about 5 galleries per call; cron jobs
+  showcase-refresh-slice-0..5 at 03:00-03:25 UTC replace showcase-refresh-daily (supabase/schedule_showcase_refresh.sql).
+  Manual test of slice 0: 132 read, 71 items added, no error. Slices 1-5 first run 2026-11-05 03:05-03:25 UTC:
+  NOT yet checked (look at showcase_refresh_runs; an empty report means the slice died). Land-book still 403.
+- GradientDeck UI (ui.gradientdeck.com, DESIGN.md files made from real sites; robots allows /styles/) added as a
+  `sitemap` gallery (30 newest per refresh) and imported in full with scripts/import-sitemap-gallery.ts: 1,275
+  entries read, 1,272 with name and live link, 752 new items and 1,249 gallery credits. Listed now 12,400.
+  Two crawlers ran at once by mistake (restart); results deduped. New items have no picture until the daily captures.
+- Idea (not started): our own DESIGN.md per site (measured styles + written summary), prototype on ~20 sites first.

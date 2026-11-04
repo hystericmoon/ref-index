@@ -238,6 +238,18 @@ export const GALLERIES: Gallery[] = [
     entryName: /<h1[^>]*>([^<]+)<\/h1>/,
     limit: 30,
   },
+  // DESIGN.md files made from real websites. Each /styles/<slug> page links to the site it was made
+  // from; robots.txt allows /styles/. Names come from the page title ("Railway DESIGN.md: …").
+  {
+    name: "GradientDeck UI",
+    platform: "web",
+    kind: "sitemap",
+    listing: "https://ui.gradientdeck.com/sitemap.xml",
+    item: /^https:\/\/ui\.gradientdeck\.com\/styles\/(?!recent$)[a-z0-9-]+$/,
+    entryLive: /<a href="(https?:\/\/(?!ui\.gradientdeck\.com)[^"]+)" target="_blank" rel="noreferrer"/,
+    entryName: /<title>([^<]+?) DESIGN\.md/,
+    limit: 30,
+  },
   // A directory of UI libraries and design tools (MIT, github.com/miqdadbadjuber/style-ui). Each
   // section is its own category; `listing` is the first page.
   {
