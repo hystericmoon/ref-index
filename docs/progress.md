@@ -483,3 +483,21 @@ _(ideas and out-of-scope items noted during sessions)_
 - Resume here (2026-11-04): nothing running in the background. Start at step 1, then 2. Each step: lint,
   typecheck, build pass; commit with the GitHub-linked email; short entry here. Steps 4 and 7 need design
   choices: stop and ask the owner before starting them.
+
+### Quick checks, share pictures for 403/bot-check sites, 429 retry (2026-11-04)
+- Step 1: panel focus returns to the card with the x button and with a backdrop click (live site, real clicks).
+  Detail images: cdn-sync now prunes 150 unused files from the mirror (earlier runs said 0; uploaded to Pages).
+  BLOCKER: the daily `showcase-refresh` function dies with WORKER_RESOURCE_LIMIT now that it reads 22+ galleries
+  (run 6 on 2026-11-03 and a manual run 2026-11-04 left an empty report, run 7). The nine 2026-11-02 galleries
+  have never been read; Lapa Ninja's feed answers 200 to curl, its status from the function is unknown. Fix
+  (not done): read galleries in slices per call (several cron jobs or a `?from=` parameter). Daily run is
+  skipped until 12 h after run 7.
+- Step 2: scripts/og-images.ts read the home page once per site (741 sites: 403 / bot check / 429 / Style UI):
+  448 home pages answered 403 and 5 answered 429 (skipped), 184 had no og:image, 22 were too small or not landscape,
+  the rest failed. 47 pictures, 10 dropped because several sites shared one picture, so 37 sites are listed again
+  (listed now 11,577) with `thumb_is_share_image = true` (migration 20261104000100). Undo: tmp/og/batch-1-undo.sql.
+  Images uploaded with cdn-sync, cache cleared. Not done: showing "share image" on the card.
+- Step 3: 11 sites with 429 retried once (no 429 header read; the script reports only the status): all 11 still
+  blocked (10 x 429, 1 x 403). Nothing changed.
+- Resume here (2026-11-04): nothing running; everything pushed. Next is step 4 or 7 (need the owner's
+  choice), or first fix the refresh function (slices) since it blocks new galleries.
