@@ -470,11 +470,15 @@ export async function readGallery(gallery: Gallery): Promise<Found[]> {
   return parseGallery(gallery, await res.text(), res.url || gallery.listing).slice(0, gallery.limit ?? 100);
 }
 
-/** Read every gallery; a gallery that fails (blocked, down) is reported and skipped. */
-export async function readAllGalleries() {
+/**
+ * Read the galleries of one slice (gallery i is in slice i % of); a gallery that fails (blocked, down)
+ * is reported and skipped. One call can't read them all: with 22+ galleries it ran out of compute.
+ */
+export async function readAllGalleries(slice = 0, of = 1) {
   const found: Found[] = [];
   const report: Record<string, string> = {};
-  for (const gallery of GALLERIES) {
+  for (const [i, gallery] of GALLERIES.entries()) {
+    if (i % of !== slice) continue;
     try {
       const items = await readGallery(gallery);
       found.push(...items);
