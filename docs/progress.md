@@ -455,3 +455,31 @@ _(ideas and out-of-scope items noted during sessions)_
   The 2026-11-03 "Resume here" items (live check, tab stops) are done. Left, none started: the "Later" list (line ~178)
   and pictures for sites that fail with 403/429. Not checked: closing a panel with the x button or backdrop still
   returns focus to the card (only Escape was tried). After any bulk unlist/import, run scripts/clear-cache.ts.
+
+### Plan: "Later" items and pictures for 403/429 sites (2026-11-04)
+- Owner's choice: do everything that can be done, in this order. Nothing started yet.
+- Policy kept: bot checks and 403s are not worked around (no disguised browser). Only use what the site
+  publishes openly.
+- Numbers (tmp/showcase-retry2/*/results.ndjson, hidden sites with no picture, list tmp/unlisted-no-picture.txt):
+  595 status 403, 136 bot check page, 10 status 429. Also Uiverse, MOTION.ED, Rare UI (Style UI). The 51 listed
+  sites that hit 403/402/429/5xx in the 2026-11-03 recheck kept their old picture: nothing missing there.
+1. Quick checks (small): closing a panel with the x button and the backdrop returns focus to the card (only
+   Escape tried); latest `showcase_refresh_runs` report shows the nine 2026-11-02 galleries read; drop Lapa Ninja
+   if it reads "skipped (HTTP 403)"; confirm the 187 unused detail images were pruned (sync said "0 removed").
+2. og:image pictures (high value, medium): for the 403/bot-check/429 hidden sites, fetch the home page once with
+   a plain request (generic client name, no contact details), read og:image / twitter:image; skip if that is 403
+   too or the image is a logo/tiny (< 600 px wide). Resize to 640x400 WebP cover, save as thumb with a flag that it
+   is the site's share image, not a screenshot (new column via a new migration). List again only sites that get
+   one; keep an undo list. Then `node --env-file=.env.local scripts/clear-cache.ts` and cdn-sync.
+3. Slow 429 retry (small): one capture per site, honour Retry-After, one try. About 13 sites.
+4. Captures straight to cdn/, empty the Supabase `showcase` bucket (684 MB of 1 GB; medium-large). Unblocks 2x
+   detail images (~250 MB) and details for every site.
+5. Real award dates per gallery (`first_seen` is the import day; medium).
+6. More galleries by HTML scraping: Webflow, Landingfolio, CSS Light (medium).
+7. Captures in CI instead of this PC (large; needs 4 and images on R2).
+8. Small gaps: non-English category matching; `add_showcase_entries` name-only match; recapture the 5
+   "blocked on this network" sites from another network (needs the owner's network).
+9. Upload (private library): bulk tagging, HEIC, paste from clipboard, remove failed originals.
+- Resume here (2026-11-04): nothing running in the background. Start at step 1, then 2. Each step: lint,
+  typecheck, build pass; commit with the GitHub-linked email; short entry here. Steps 4 and 7 need design
+  choices: stop and ask the owner before starting them.
