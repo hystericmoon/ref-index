@@ -524,3 +524,29 @@ _(ideas and out-of-scope items noted during sessions)_
   fallback no longer finds anything (harmless).
 - Step 7 (captures in CI) NOT started: needs the owner's choices (CI service, where the images live: R2 or keep
   Pages and download the mirror each run, where the Cloudflare and Supabase tokens go).
+
+### Resume here: step 7, captures in CI (2026-11-05)
+- State: everything pushed; nothing running in the background. Steps 1-4 of the plan are done (see the entries above).
+  The refresh runs as six slices; Supabase `showcase` bucket is empty; images live only in cdn/ and on Cloudflare Pages.
+- Backup made 2026-11-05: C:\Projects\ref-index-backup-2026-11-05 (cdn/ 33,687 files, .env.local, .env.production,
+  tmp undo/import lists). Same disk as the project: the owner should copy it to an external drive or cloud.
+- Facts: repo hystericmoon/ref-index is PRIVATE (GitHub Actions: 2,000 free min/month; estimate 20-40 min/day, not
+  measured). gh is installed (C:\Program Files\GitHub CLI\gh.exe, not on the Git Bash PATH) and logged in.
+  The owner has NO domain on Cloudflare. Daily job today: scripts/daily-captures.sh on the PC (Task Scheduler,
+  11:30 local): capture-showcase.sh, capture-details.sh, cdn-sync.ts (which deploys the whole cdn/ mirror to the three
+  Pages projects openrefs-thumbs, openrefs-thumbs-sm, openrefs-details; wrangler needs CLOUDFLARE_API_TOKEN).
+  DB writes use `supabase db query --linked` (needs an access token in CI).
+- Agreed plan (owner's go-ahead pending their R2 setup): keep Pages serving (site code and .env.production unchanged);
+  use a Cloudflare R2 bucket `openrefs-images` (free: 10 GB, free downloads; the mirror is ~1.2 GB) as the MASTER copy.
+  CI job: download the mirror from R2, capture new items (capture-showcase, capture-details, og images if wanted),
+  upload new files to R2, run cdn-sync (deploy to Pages). Rejected: Worker on workers.dev (100k requests/day),
+  Actions cache as master (evicts after 7 days), r2.dev address (testing only, rate-limited).
+- Owner must first: create the R2 bucket and an Object Read & Write token (bucket-scoped) and put R2_ACCESS_KEY_ID and
+  R2_SECRET_ACCESS_KEY in .env.local (do not read or print the values). Later `gh secret set` for CLOUDFLARE_API_TOKEN,
+  CLOUDFLARE_ACCOUNT_ID, R2 keys, SUPABASE_ACCESS_TOKEN, and the Supabase project ref/DB password as needed (ask first).
+- To build: (1) one-off upload of cdn/ to R2 (S3 API via @aws-sdk/client-s3 or rclone; verify counts match 33,687 files);
+  (2) cdn-sync: option to pull the mirror from R2 and push new files; (3) .github/workflows/daily-captures.yml (cron
+  after the 03:00-03:25 UTC refresh, e.g. 05:00 UTC; install Chromium with Playwright; GPU/WebGL differs from the PC:
+  compare a few captures); (4) keep the PC job as fallback until three CI runs are checked, then disable it;
+  (5) measure minutes used in the first week. Stop and ask before storing secrets in GitHub or disabling the PC job.
+- Other open items: Land-book 403 in the refresh (skipped); "DESIGN.md per site" idea is ON HOLD (owner said wait).
