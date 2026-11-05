@@ -7,6 +7,7 @@
 # (default: until every item is tried) size a run, e.g. for a CI runner or a small test.
 set -euo pipefail
 supabase=./node_modules/.bin/supabase
+mkdir -p tmp/showcase-thumbs
 n=$(find tmp/showcase-thumbs -maxdepth 1 -name "batch-*" -type d 2>/dev/null | wc -l)
 batches=0
 while [ "$batches" -lt "${MAX_BATCHES:-1000000}" ]; do
