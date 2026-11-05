@@ -615,3 +615,13 @@ _(ideas and out-of-scope items noted during sessions)_
   (5) short progress entry, commit, push.
 - Owner decides in the morning: the Flagged queue in /curate; the 12 unsure timeouts (hide or keep).
 - Also running daily: PC job 11:30 local, CI 07:00 UTC (both run cdn-sync; the retake job should be done long before).
+
+### Screenshot retakes finished, unfixable ones flagged (2026-11-06)
+- Retake job done 23:49: batch 1 283/300, batch 2 273/300, batch 3 223/229 replaced, all recorded (779 of 829 now on
+  img/v4; 50 kept their old shot, 18 rejects). Re-scored the 829 (tmp/site-audit/rescore.mjs → after.json): 693 still
+  scored suspect, all looked at on 18 numbered sheets (tmp/site-audit/after/); most are just minimal designs.
+- Flagged 419 in /curate (250 broken: loaders, enter/sound/age/password gates, bot check, sign-in, errors, private,
+  coming soon; 169 low_quality: mostly empty, hero/video not loaded, popups). Nothing hidden, reviewed_at untouched.
+  Ids + reasons: tmp/site-audit/flagged-2026-11-06.json; undo: flag-2026-11-06-undo.sql. Cache cleared; live cards
+  checked (rickardsund, yinger.dev, eleven-eleven serve v4). No code changes.
+- Owner decides: Flagged queue (420 incl. 1 older); the 12 unsure timeouts (tmp/site-audit/unsure-timeouts.json).
