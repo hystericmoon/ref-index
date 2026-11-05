@@ -550,3 +550,18 @@ _(ideas and out-of-scope items noted during sessions)_
   compare a few captures); (4) keep the PC job as fallback until three CI runs are checked, then disable it;
   (5) measure minutes used in the first week. Stop and ask before storing secrets in GitHub or disabling the PC job.
 - Other open items: Land-book 403 in the refresh (skipped); "DESIGN.md per site" idea is ON HOLD (owner said wait).
+
+### Step 7, captures in CI: R2 in place, CI blocked by GitHub billing (2026-11-05)
+- R2 bucket openrefs-images is the master copy: one-off upload of cdn/ matched exactly (33,687 files: thumbs
+  13,264, thumbs-sm 13,264, details 7,159, incl. one _headers each; 1.62 GB). cdn-sync.ts now fills the mirror
+  from R2, uploads new files to R2 and drops unused ones (skips removal if over 10% / 200 files) before each Pages
+  deploy; the empty Supabase bucket fallback is gone. The PC job runs the same script, so it keeps R2 current too.
+- .github/workflows/daily-captures.yml: 07:00 UTC (after the PC job at 04:30 UTC) and on demand (inputs
+  max_batches, limit); cdn/ cached between runs. Capture scripts take CAPTURE_LIMIT, CAPTURE_WORKERS, MAX_BATCHES.
+  Seven repo secrets set (Supabase URL/publishable key, Cloudflare token/account, R2 keys, SUPABASE_ACCESS_TOKEN =
+  scoped token "openrefs-ci": ref-index project, Database read-write, Project Settings read, never expires).
+- Blocked: the first manual run (42035641935) didn't start: "recent account payments have failed or your spending
+  limit needs to be increased" (GitHub Billing & plans). Owner to fix, then rerun: gh workflow run
+  daily-captures.yml -f max_batches=1 -f limit=8. Not yet checked: CI captures vs PC (no GPU), minutes used,
+  `supabase db query --linked` with the scoped token. PC job unchanged and still the daily job.
+- Open: 269 items with no thumb_checked_at (today's PC batch 58 "recording failed"); the next run retries them.
