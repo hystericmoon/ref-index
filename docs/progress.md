@@ -579,3 +579,39 @@ _(ideas and out-of-scope items noted during sessions)_
 - Next: the 07:00 UTC schedule runs from 2026-11-06. Keep the PC job (11:30 local) until three CI runs are
   checked; ask the owner before disabling it. 263 items still wait for screenshots (PC batch 58's SQL is valid;
   its failure looks transient). Later: bump actions to Node 24 versions (deprecation warning); measure minutes.
+
+### Site audit, dead sites hidden, Archive removed (2026-11-05 night)
+- Audit (scripts in tmp/site-audit/): live site crawl 213 pages all 200, 716 images OK; all 33,696 image paths
+  load from Pages; liveness of all 12,695 listed sites (live-check.mjs, retry.mjs, browser-check.mjs).
+- Hidden 66 (status 'hidden'): 21 confirmed dead in a real browser (no DNS, 404/site-not-found, persistent 5xx,
+  dead campaign pages) + the 51 former Archive items (capture failed). List: tmp/site-audit/hidden-2026-11-05.json,
+  undo: tmp/site-audit/hide-2026-11-05-undo.sql. Listed now 12,629. NOT hidden: 12 that only timed out from this
+  PC (tmp/site-audit/unsure-timeouts.json; may be the ISP), and false alarms (ISP cert interception on
+  vimeo/kraken/aave/questrade, header-size errors on webflow/maersk, uber's bot 404, 92 bot-blocked 403s).
+- Archive view removed from the site (99137fc): views are top/all; ?view=archive falls back to top; footer says dead
+  sites are removed. Owner's rule: dead sites are hidden, no archive. Cache cleared.
+- REVALIDATE_SECRET had vanished from .env.local (lost when the R2 keys were added); restored that one line from
+  the 2026-11-05 backup. Other names match the backup.
+- Screenshot scores for all 12,314 listed (tmp/site-audit/shots.json, shot-scores.mjs). 829 suspects (empty middle
+  flatMid>=0.95, entropy<0.5, plus 20 seen by eye: ferrari bot check, classroom.google sign-in, swimclub.co shows
+  Google, loaders on valkai/thirdway/gang.tv/pixelismo/..., gates on daikifujita/lorenzolottici, age checks on
+  drinkyodo/talkencore) in tmp/site-audit/retake-ids.txt.
+
+### Resume here (2026-11-05 23:15 local): finish the screenshot retakes and flag what's left
+- RUNNING detached: tmp/site-audit/run-retakes.sh (retakes the 829 with --recheck --prefix v4 --wait 8000
+  --settle-max 20000, 10 workers, 300 per batch, folders tmp/showcase-retake-1105/batch-N; each batch is added to
+  R2 + Pages, then recorded; old shot kept when the retake looks emptier, rejects in batch-N/rejected/).
+  Log: tmp/site-audit/retakes.log, ends with "== done HH:MM" (expected ~00:30). Check it's alive:
+  Get-CimInstance Win32_Process | ? CommandLine -like '*run-retakes*'. If it died, rerun (resumes, skips tried ids):
+  Start-Process "C:\Program Files\Git\bin\bash.exe" -ArgumentList "-c","'bash /c/Projects/ref-index/tmp/site-audit/run-retakes.sh > /c/Projects/ref-index/tmp/site-audit/retakes.log 2>&1'" -WindowStyle Hidden
+  (A first attempt was killed; its stray img/v4 files were removed from cdn/ and R2; DB had no v4 paths.)
+- Then: (1) per batch, check "replaced of N" and that no "recording failed"; (2) re-score the 829 with their current
+  thumb_path (adapt shot-scores.mjs to the id list), make numbered sheets (node tmp/site-audit/sheets.mjs <list.json>
+  tmp/site-audit/after) and look at every still-suspect one; (3) flag the ones a retake can't fix in the /curate
+  Flagged queue: update showcase_items set ai_flag='broken' (bot check, sign-in, error, blank, loader/intro still on,
+  enter/age/sound gates) or 'low_quality' (cropped, banner-covered, mostly empty), reviewed_at stays null; the owner
+  decides Keep/Hide there. Save the flagged ids + reasons to tmp/site-audit/flagged-2026-11-06.json; (4) clear the
+  cache (node --env-file=.env.local scripts/clear-cache.ts) and spot-check a few retaken cards on the live site;
+  (5) short progress entry, commit, push.
+- Owner decides in the morning: the Flagged queue in /curate; the 12 unsure timeouts (hide or keep).
+- Also running daily: PC job 11:30 local, CI 07:00 UTC (both run cdn-sync; the retake job should be done long before).
