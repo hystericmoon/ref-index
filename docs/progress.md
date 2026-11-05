@@ -565,3 +565,17 @@ _(ideas and out-of-scope items noted during sessions)_
   daily-captures.yml -f max_batches=1 -f limit=8. Not yet checked: CI captures vs PC (no GPU), minutes used,
   `supabase db query --linked` with the scoped token. PC job unchanged and still the daily job.
 - Open: 269 items with no thumb_checked_at (today's PC batch 58 "recording failed"); the next run retries them.
+
+### Step 7 done: captures run in GitHub Actions (2026-11-05)
+- Repo made PUBLIC by the owner (no Actions budget; public repos run free). History checked first: no secrets
+  ever committed (only empty placeholders in .env.example). The "Blocked" note above is resolved.
+- Manual run 42040354919 (max_batches=1, limit=8): mirror restored from cache + R2 (33,684 images, 0 failed),
+  6 of 8 sites captured, recorded, uploaded to R2 and deployed to all three Pages projects (all 6 return 200 on
+  thumbs and thumbs-sm). 5 min 13 s wall time. Two fixes on the way: capture-showcase.sh now creates its batch
+  folder (fresh runner had none), and CI writes supabase/.temp/pooler-url (direct DB host is IPv6-only, runners
+  aren't). Recording errors are now printed instead of only "recording failed".
+- Screenshot quality: wisprflow.ai looks like a PC capture; wovenwhisky.com shows a loader over its hero
+  (likely a video Chromium can't play without the GPU/codecs). Compare a few more in the next runs.
+- Next: the 07:00 UTC schedule runs from 2026-11-06. Keep the PC job (11:30 local) until three CI runs are
+  checked; ask the owner before disabling it. 263 items still wait for screenshots (PC batch 58's SQL is valid;
+  its failure looks transient). Later: bump actions to Node 24 versions (deprecation warning); measure minutes.
