@@ -1,0 +1,118 @@
+# Daily follow-up to the 03:00 UTC gallery refresh, the CI copy of scripts/daily-captures.sh:
+# screenshots new showcase items, makes detail captures for new Top picks, and uploads them.
+# The images' master copy lives in the Cloudflare R2 bucket openrefs-images; scripts/cdn-sync.ts
+# fills the runner's cdn/ mirror from it, adds each capture batch to R2, then deploys the mirror to
+# the Cloudflare Pages projects the site loads images from. Runs at 07:00 UTC, after the PC job
+# (04:30 UTC) has finished, so the two never deploy at the same time.
+name: Daily captures
+
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      max_batches:
+        description: "Capture batches per step (empty: until every new item is tried)"
+        required: false
+        default: ""
+      limit:
+        description: "Items per batch (empty: 100 screenshots, 50 detail captures)"
+        required: false
+        default: ""
+
+concurrency:
+  group: daily-captures
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  captures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      MAX_BATCHES: ${{ inputs.max_batches }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The scripts read .env.local, and the Supabase CLI reads the linked project from
+      # supabase/.temp/project-ref (the subdomain of the project address).
+      - name: Write settings
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: |
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY; do
+            [ -n "${!name}" ] || { echo "::error::Secret $name is not set"; exit 1; }
+            echo "$name=${!name}" >> .env.local
+          done
+          mkdir -p supabase/.temp
+          echo "$NEXT_PUBLIC_SUPABASE_URL" | sed -E 's|https?://([^.]+)\..*|\1|' > supabase/.temp/project-ref
+
+      # A cache of yesterday's mirror saves downloading every image from R2; R2 fills the gaps.
+      - name: Restore the image mirror
+        uses: actions/cache/restore@v4
+        with:
+          path: cdn
+          key: cdn-${{ github.run_id }}
+          restore-keys: cdn-
+
+      - name: Fill the mirror from R2
+        run: node scripts/cdn-sync.ts --no-deploy
+
+      - name: Capture screenshots
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CAPTURE_LIMIT: ${{ inputs.limit || '100' }}
+          CAPTURE_WORKERS: "4"
+        run: bash scripts/capture-showcase.sh
+
+      - name: Capture details
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          CAPTURE_LIMIT: ${{ inputs.limit || '50' }}
+          CAPTURE_WORKERS: "3"
+        run: bash scripts/capture-details.sh
+
+      # Each batch is already in R2 and on Pages; this drops images the site no longer uses.
+      - name: Sync R2 and Pages
+        run: node scripts/cdn-sync.ts
+
+      - name: Save the image mirror
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: cdn
+          key: cdn-${{ github.run_id }}
+
+      - name: Keep the capture results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-results
+          path: |
+            tmp/showcase-thumbs/*/results.ndjson
+            tmp/showcase-details/*/results.ndjson
+            tmp/showcase-thumbs/*.sql
+            tmp/showcase-details/*.sql
+          retention-days: 14
+          if-no-files-found: ignore
