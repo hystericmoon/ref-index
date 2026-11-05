@@ -512,3 +512,15 @@ _(ideas and out-of-scope items noted during sessions)_
   entries read, 1,272 with name and live link, 752 new items and 1,249 gallery credits. Listed now 12,400.
   Two crawlers ran at once by mistake (restart); results deduped. New items have no picture until the daily captures.
 - Idea (not started): our own DESIGN.md per site (measured styles + written summary), prototype on ~20 sites first.
+
+### Step 4 done: Supabase `showcase` bucket emptied; refresh slices checked (2026-11-05)
+- Refresh slices: all six ran 2026-11-05 03:00-03:25 UTC with no error (read 182/123/81/154/247/175, items added
+  18/38/33/88/43/75). The slice fix works.
+- Before deleting, checked every image the DB points to on Pages: 13,263 thumbnails (full and 720px copies) and
+  5,983 detail images, 32,509 requests, all 200 (one network error that was 200 on retry). Captures already went
+  straight into cdn/ and Pages (`cdn-sync --add`), so only the old copies were left. Ran tmp/empty-showcase-bucket.sh:
+  `storage.objects` for bucket showcase is now 0 objects, 0 MB (was 21,761 files, ~696 MB); the live site loads.
+  cdn/ (682 MB details, 556 MB thumbs) plus Pages are now the only copies: back up cdn/. cdn-sync's old-bucket
+  fallback no longer finds anything (harmless).
+- Step 7 (captures in CI) NOT started: needs the owner's choices (CI service, where the images live: R2 or keep
+  Pages and download the mirror each run, where the Cloudflare and Supabase tokens go).
