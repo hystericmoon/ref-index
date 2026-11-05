@@ -22,6 +22,6 @@ while [ "$batches" -lt "${MAX_BATCHES:-1000000}" ]; do
     node scripts/cdn-sync.ts --add "$dir" >/dev/null || { echo "batch $n: upload failed, not recorded"; continue; }
   fi
   node scripts/showcase-thumbs-sql.ts "$dir" > "$dir.sql"
-  $supabase db query --linked -f "$dir.sql" >/dev/null || echo "batch $n: recording failed"
+  out=$($supabase db query --linked -f "$dir.sql" 2>&1) || { echo "batch $n: recording failed:"; echo "$out" | grep -viE "new version|recommend updating" | tail -5; }
   echo "batch $n: $(grep -c '"ok":true' "$dir/results.ndjson") captured of $(wc -l < "$dir/results.ndjson") ($(date +%H:%M))"
 done

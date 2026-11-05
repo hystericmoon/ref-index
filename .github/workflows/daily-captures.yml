@@ -51,7 +51,9 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       # The scripts read .env.local, and the Supabase CLI reads the linked project from
-      # supabase/.temp/project-ref (the subdomain of the project address).
+      # supabase/.temp/project-ref (the subdomain of the project address). It connects through the
+      # pooler in supabase/.temp/pooler-url (no password in it): the direct database address is
+      # IPv6-only, which GitHub's runners can't reach.
       - name: Write settings
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -67,6 +69,7 @@ jobs:
           done
           mkdir -p supabase/.temp
           echo "$NEXT_PUBLIC_SUPABASE_URL" | sed -E 's|https?://([^.]+)\..*|\1|' > supabase/.temp/project-ref
+          echo "postgresql://postgres.$(cat supabase/.temp/project-ref)@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres" > supabase/.temp/pooler-url
 
       # A cache of yesterday's mirror saves downloading every image from R2; R2 fills the gaps.
       - name: Restore the image mirror
