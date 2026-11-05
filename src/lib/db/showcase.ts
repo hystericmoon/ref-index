@@ -35,9 +35,9 @@ const imageUrl = (path: string) => `${path.startsWith("img/details/") ? DETAILS 
 // capture is recorded.
 const smallThumbUrl = (path: string | null) => (path ? `${THUMBS_SMALL}/${path}` : null);
 
-/** top: staff picks and sites featured by 2+ galleries (counted internally, not shown) · all: every live entry · archive: sites that are gone. */
-export type ShowcaseView = "top" | "all" | "archive";
-export const SHOWCASE_VIEWS: ShowcaseView[] = ["top", "all", "archive"];
+/** top: staff picks and sites featured by 2+ galleries (counted internally, not shown) · all: every live entry. Dead sites are hidden, not shown. */
+export type ShowcaseView = "top" | "all";
+export const SHOWCASE_VIEWS: ShowcaseView[] = ["top", "all"];
 
 export type ShowcaseQuery = { q?: string; medium?: string; gallery?: string; view?: ShowcaseView; category?: string; offset?: number; limit?: number };
 
@@ -80,7 +80,7 @@ export async function getCategoryCounts(db: DbClient): Promise<CategoryCounts> {
   const { data, error } = await db.rpc("showcase_category_counts");
   if (error) throw error;
   return Object.fromEntries(
-    data.map((row) => [row.category, { top: Number(row.top), all: Number(row.everything), archive: Number(row.archive) }]),
+    data.map((row) => [row.category, { top: Number(row.top), all: Number(row.everything) }]),
   );
 }
 
@@ -97,7 +97,7 @@ export async function getViewCounts(db: DbClient): Promise<Record<ShowcaseView, 
   const { data, error } = await db.rpc("showcase_view_counts");
   if (error) throw error;
   const row = data[0];
-  return { top: Number(row?.top ?? 0), all: Number(row?.everything ?? 0), archive: Number(row?.archive ?? 0) };
+  return { top: Number(row?.top ?? 0), all: Number(row?.everything ?? 0) };
 }
 
 export type ReviewItem = { id: string; name: string; url: string | null; platform: string; thumbUrl: string | null; galleryCount: number; galleries: string[]; categories: string[]; aiFlag: string | null };

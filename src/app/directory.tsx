@@ -270,11 +270,10 @@ function useRovingGrid(grid: React.RefObject<HTMLUListElement | null>, items: un
   return { onFocus, onKeyDown };
 }
 
-const CURATION_LABEL: Record<Curation, string> = { top: "Top picks", all: "Everything", archive: "Archive" };
+const CURATION_LABEL: Record<Curation, string> = { top: "Top picks", all: "Everything" };
 const CURATION_NOTE: Record<Curation, string> = {
   top: "Staff picks and the sites design curators pick most.",
   all: "Every live site and app in the collection.",
-  archive: "Sites that have gone offline, been parked or block visitors. Kept for the record.",
 };
 
 function ShowcaseView({
@@ -351,7 +350,7 @@ function ShowcaseView({
           label="Collection"
           value={curation}
           onChange={setCuration}
-          options={(["top", "all", "archive"] as const).map((c) => ({
+          options={(["top", "all"] as const).map((c) => ({
             value: c,
             label: (
               <>
@@ -419,7 +418,7 @@ function ShowcaseView({
       )}
       <p className="max-w-[72ch] border-t pt-4 text-sm text-muted-foreground">
         Collected from around the web, refreshed daily, then curated: top picks are the sites design curators
-        pick most plus our own staff picks, and dead or parked sites move to the archive. Screenshots are our own
+        pick most plus our own staff picks, and dead or parked sites are removed. Screenshots are our own
         captures of each live site. Sponsored placements are left out.
       </p>
     </div>

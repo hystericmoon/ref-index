@@ -24,8 +24,7 @@ export default async function CuratePage({ searchParams }: { searchParams: Promi
           from every public view. Keys: F, K, H act on the first card; Z undoes.
         </p>
         <p className="font-mono text-xs text-muted-foreground">
-          {counts.top.toLocaleString("en-US")} top picks · {counts.all.toLocaleString("en-US")} listed ·{" "}
-          {counts.archive.toLocaleString("en-US")} archived
+          {counts.top.toLocaleString("en-US")} top picks · {counts.all.toLocaleString("en-US")} listed
         </p>
       </header>
       <nav aria-label="Queues" className="flex gap-1.5">
