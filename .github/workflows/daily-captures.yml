@@ -34,13 +34,13 @@ jobs:
     env:
       MAX_BATCHES: ${{ inputs.max_batches }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
@@ -73,7 +73,7 @@ jobs:
 
       # A cache of yesterday's mirror saves downloading every image from R2; R2 fills the gaps.
       - name: Restore the image mirror
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: cdn
           key: cdn-${{ github.run_id }}
@@ -102,14 +102,14 @@ jobs:
 
       - name: Save the image mirror
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: cdn
           key: cdn-${{ github.run_id }}
 
       - name: Keep the capture results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: capture-results
           path: |

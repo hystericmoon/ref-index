@@ -165,8 +165,8 @@ const ShowcaseCard = memo(function ShowcaseCard({
       onTouchStart={prefetch}
       onFocus={prefetch}
       scroll={false}
-      aria-label={`${e.name}: full page and inner pages`}
-      className="group block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+      aria-label={`${e.name}: full page and inner pages${e.thumbIsShareImage ? " (picture is the site's share image)" : ""}`}
+      className="group relative block aspect-[16/10] overflow-hidden rounded-2xl border bg-muted focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
     >
       {e.thumbUrl ? (
         // A plain img: next/image doesn't take a hand-written srcSet. Cards are ~290-420 CSS px wide
@@ -189,6 +189,12 @@ const ShowcaseCard = memo(function ShowcaseCard({
           {e.name}
         </span>
       )}
+      {e.thumbUrl && e.thumbIsShareImage ? (
+        // The site blocks capture scripts, so this is the picture it publishes for link previews.
+        <span aria-hidden className="absolute bottom-2 left-2 rounded-full border bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground">
+          Share image
+        </span>
+      ) : null}
     </Link>
   );
   return (

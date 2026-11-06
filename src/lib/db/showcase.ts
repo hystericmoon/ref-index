@@ -10,6 +10,8 @@ export type ShowcaseEntry = {
   thumbUrl: string | null;
   /** The same picture 720px wide, for cards (null when there is no picture). */
   thumbSmallUrl: string | null;
+  /** The picture is the site's own share image (og:image), not a screenshot: the site blocks capture scripts. */
+  thumbIsShareImage: boolean;
   /** Chosen by an editor. */
   staffPick: boolean;
   /** How many galleries featured it. */
@@ -63,6 +65,7 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
         tags: row.tags,
         thumbUrl: row.thumb_path ? imageUrl(row.thumb_path) : null,
         thumbSmallUrl: smallThumbUrl(row.thumb_path),
+        thumbIsShareImage: row.thumb_is_share_image,
         staffPick: row.staff_pick,
         galleryCount: row.gallery_count,
         categories: row.categories,
@@ -164,7 +167,7 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
   const [{ data: row, error }, { data: features, error: featuresError }] = await Promise.all([
     db
       .from("showcase_items")
-      .select("id, name, url, platform, tags, thumb_path, staff_pick, gallery_count, categories, status, details")
+      .select("id, name, url, platform, tags, thumb_path, thumb_is_share_image, staff_pick, gallery_count, categories, status, details")
       .eq("id", id)
       .maybeSingle(),
     db.from("showcase_features").select("source_url").eq("item_id", id).order("first_seen").limit(1),
@@ -181,6 +184,7 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
     tags: row.tags,
     thumbUrl: row.thumb_path ? imageUrl(row.thumb_path) : null,
     thumbSmallUrl: smallThumbUrl(row.thumb_path),
+    thumbIsShareImage: row.thumb_is_share_image,
     staffPick: row.staff_pick,
     galleryCount: row.gallery_count,
     categories: row.categories,

@@ -29,7 +29,7 @@ The next session picks up from `docs/progress.md`, not from chat history.
 | 5 | Tagging UI | ◐ built; not checked in a signed-in browser |
 | 6 | ◆ Search and filters | ✅ (not checked in a signed-in browser) |
 | 7 | Screen viewer and flows | ✅ (not checked in a signed-in browser) |
-| 8 | Directory and site thumbnails | ✅ (3 sites without thumbnails) |
+| 8 | Directory and site thumbnails | ✅ (the gallery-search tab and its 3 missing thumbnails are gone) |
 | 9 | Accessibility, performance, launch | ✅ (/library and viewer not measured) |
 
 ---

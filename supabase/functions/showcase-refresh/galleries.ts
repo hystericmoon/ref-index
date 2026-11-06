@@ -50,6 +50,8 @@ export type Gallery = {
   liveFrom?: RegExp;
   jsonType?: string;
   limit?: number;
+  /** Set to a reason to stop reading this gallery; it stays in the list so the other galleries keep their slice. */
+  off?: string;
   /**
    * The live link is only on each entry's own page: capture it from that page (see resolveLive).
    * `entryUrl` maps the entry to the page to read (an API), `entryBase64` decodes the capture.
@@ -152,6 +154,9 @@ export const GALLERIES: Gallery[] = [
   },
   // Added 2026-11-02: free galleries, still updating, entries and live links not paywalled.
   {
+    // Off since 2026-11-06: /rss is gone (404). The new feed /feed/winners.xml links /w/<slug> pages whose live
+    // link only comes from /api, and robots.txt disallows /api. We only use what a site publishes openly.
+    off: "feed moved; live links only via /api, which robots.txt disallows",
     name: "The FWA",
     platform: "web",
     kind: "rss",
@@ -159,8 +164,9 @@ export const GALLERIES: Gallery[] = [
     entryUrl: (src) => src.replace("thefwa.com/cases/", "thefwa.com/api/cases/"),
     entryLive: /"url":"(https?:[^"]+)"/,
   },
-  // Answered 403 to a script on 2026-11-02 (curl got through); kept, it's reported as skipped while blocked.
-  { name: "Lapa Ninja", platform: "web", kind: "rss", listing: "https://www.lapa.ninja/rss.xml", entryLive: /<a href="([^"]+)"[^>]*title="Visit [^"]*"/ },
+  // Answered 403 to a script on 2026-11-02 (curl got through). Off since 2026-11-06: the function still gets 403
+  // (owner's rule: drop it if the real run is blocked too). Bot checks and 403s are not worked around.
+  { off: "answers 403 to the refresh", name: "Lapa Ninja", platform: "web", kind: "rss", listing: "https://www.lapa.ninja/rss.xml", entryLive: /<a href="([^"]+)"[^>]*title="Visit [^"]*"/ },
   { name: "CSS Winner", platform: "web", kind: "rss", listing: "https://www.csswinner.com/feed", entryLive: /<h1><a href="([^"]+)"/ },
   {
     name: "Best Website Gallery",
@@ -491,6 +497,10 @@ export async function readAllGalleries(slice = 0, of = 1) {
   const report: Record<string, string> = {};
   for (const [i, gallery] of GALLERIES.entries()) {
     if (i % of !== slice) continue;
+    if (gallery.off) {
+      report[gallery.name] = `off (${gallery.off})`;
+      continue;
+    }
     try {
       const items = await readGallery(gallery);
       found.push(...items);

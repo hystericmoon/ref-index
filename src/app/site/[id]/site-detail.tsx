@@ -103,9 +103,20 @@ export function SiteDetail({ item }: { item: ShowcaseItem }) {
         ) : item.thumbUrl ? (
           <>
             <div className="w-full max-w-5xl overflow-hidden rounded-2xl border bg-muted">
-              <Image src={item.thumbUrl} alt={`The top of ${item.name}'s home page.`} width={1280} height={800} unoptimized className="h-auto w-full" />
+              <Image
+                src={item.thumbUrl}
+                alt={item.thumbIsShareImage ? `The share image ${item.name} publishes for link previews.` : `The top of ${item.name}'s home page.`}
+                width={1280}
+                height={800}
+                unoptimized
+                className="h-auto w-full"
+              />
             </div>
-            <p className="text-sm text-muted-foreground">Full-page and inner-page captures are made for Top picks.</p>
+            <p className="text-sm text-muted-foreground">
+              {item.thumbIsShareImage
+                ? "This is the site's own share image, not a screenshot: the site blocks capture scripts."
+                : "Full-page and inner-page captures are made for Top picks."}
+            </p>
           </>
         ) : (
           <p className="text-sm text-muted-foreground">No capture of this site yet.</p>
