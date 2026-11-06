@@ -625,3 +625,15 @@ _(ideas and out-of-scope items noted during sessions)_
   Ids + reasons: tmp/site-audit/flagged-2026-11-06.json; undo: flag-2026-11-06-undo.sql. Cache cleared; live cards
   checked (rickardsund, yinger.dev, eleven-eleven serve v4). No code changes.
 - Owner decides: Flagged queue (420 incl. 1 older); the 12 unsure timeouts (tmp/site-audit/unsure-timeouts.json).
+
+### Fix list: FWA and Lapa Ninja off, share-image label, Actions on Node 24 (2026-11-06)
+- Refresh: The FWA's /rss is gone (404); its new feed links /w/<slug> pages whose live link only comes from /api, which
+  robots.txt disallows, so it's `off` (the old code read /api too). Lapa Ninja `off` (still 403 from the function).
+  New `off` field keeps every other gallery in its slice. Land-book reads again (50 on 2026-11-05).
+  NOT DEPLOYED: the PC's Supabase login is a limited token (no edge_functions permission); until the owner signs in
+  with full access, runs keep reporting both as skipped (harmless).
+- Share image: migration 20261106000100 (search_showcase returns thumb_is_share_image), applied. Cards show a
+  "Share image" chip, the site page says so (checked live on Spicy NoSpicy). Cache cleared.
+- Actions moved to the first Node 24 majors (checkout/setup-node/pnpm/cache v5, upload-artifact v6); manual run
+  42139693939 (2 sites) passed in 4.5 min, no Node 20 notice. Repo-local git identity set (GitHub-linked email).
+- The 3 sources without thumbnails no longer show anywhere (gallery-search tab is gone).
