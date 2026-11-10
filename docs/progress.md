@@ -726,3 +726,13 @@ _(ideas and out-of-scope items noted during sessions)_
   425 sites hidden in total (queue + the 7), reviewed_at set. Undo: tmp/site-audit/hide-2026-11-10-undo.sql (ids in hide-2026-11-10-ids.txt).
   Caveat: some are fine sites whose screenshot just failed (loaders/gates); relist by id if the owner wants them back.
 - Cache cleared. No code changes.
+
+### Resume here (2026-11-10, end of session)
+- Oracle A1 VM job (job 2) is dropped by the owner; no VM exists, nothing paid. Pilot/mirror/timer not done. Unused Oracle network
+  pieces remain (openrefs-vcn, openrefs-igw, openrefs-public, default security list); delete only if the owner asks. PC job still the daily job.
+- Next, after 03:00 UTC on 2026-11-11 (10:00 Batam): read the latest `showcase_refresh_runs` report (run CLI from C:\Projects with
+  `--workdir C:/Projects/ref-index`, see the redeploy entry). Expect The FWA and Lapa Ninja "off". Look at: slice 3 WORKER_RESOURCE_LIMIT,
+  Land-book 403, Admire The Web 0 read. Report only; change nothing unless asked.
+- Owner decisions still open: copy C:\Projects\ref-index-backup-2026-11-05 off this disk; disable the PC job after 3 good CI runs (ask first).
+  Flagged queue and 12 timeouts are done (425 hidden; undo tmp/site-audit/hide-2026-11-10-undo.sql).
+- No background jobs or scheduled retries are running.
