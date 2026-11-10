@@ -1,0 +1,12 @@
+name: Recheck timeouts (one-off)
+on: workflow_dispatch
+jobs:
+  recheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request each URL
+        run: |
+          for u in https://gate108.cc/ http://ny.paraweb.me/ http://www.aaugh.it/ http://cv.okfoc.us/ https://brainstormgame.ru/en http://a-way-to-go.com/ https://zzdo.ru/; do
+            printf '%s  ' "$u"
+            curl -s -o /dev/null -L -m 25 -A 'Mozilla/5.0' -w '%{http_code} %{time_total}s\n' "$u" || echo "fail ($?)"
+          done
