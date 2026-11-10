@@ -667,3 +667,16 @@ _(ideas and out-of-scope items noted during sessions)_
   slice 3 returned WORKER_RESOURCE_LIMIT (see the older blocker note; it ran fine at 03:15 today);
   Land-book "skipped (HTTP 403)" (49 read at 03:00, Cloudflare flaps); Admire The Web "0 read" (30 at 03:00).
 - Slice 3 now has a run row from 16:25, so it can't be re-called until 04:25 UTC (12 h limit).
+
+### Job 2 step 1: Oracle A1 VM blocked, out of host capacity (2026-11-10)
+- Signed in by the owner (Free Trial tenancy, Batam / ap-batam-1, one AD). Create-instance form filled and accepted:
+  openrefs-capture, Ubuntu 24.04, VM.Standard.A1.Flex (shown "Always Free-eligible") 2 OCPU / 12 GB, 50 GB boot
+  (10 VPU), public IPv4, own SSH key (C:\Users\Hosni\.ssh\id_ed25519_openrefs, no passphrase), cloud-init pasted.
+  Create failed: "Out of capacity for shape VM.Standard.A1.Flex in availability domain AD-1". STOPPED as planned;
+  no instance exists, nothing paid for or upgraded. Steps 2-4 not started.
+- Created in the tenancy (no cost, no price shown): VCN openrefs-vcn (10.0.0.0/16), internet gateway openrefs-igw,
+  default route 0.0.0.0/0 -> openrefs-igw, public subnet openrefs-public (10.0.0.0/24), default security list
+  (still allows SSH 22 from anywhere: restrict to the owner's IP once a VM exists, then delete it after Tailscale).
+  No NAT or service gateway on purpose (not marked Always Free). The console's "create new VCN" option would not
+  enable a public IP, so the VCN was made by hand first.
+- Retry later: Create instance, pick the existing openrefs-vcn / openrefs-public, same values.
