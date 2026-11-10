@@ -637,3 +637,21 @@ _(ideas and out-of-scope items noted during sessions)_
 - Actions moved to the first Node 24 majors (checkout/setup-node/pnpm/cache v5, upload-artifact v6); manual run
   42139693939 (2 sites) passed in 4.5 min, no Node 20 notice. Repo-local git identity set (GitHub-linked email).
 - The 3 sources without thumbnails no longer show anywhere (gallery-search tab is gone).
+
+### Resume here (2026-11-10): deploy the refresh function with The FWA and Lapa Ninja off
+- Everything else from the 2026-11-06 fix list is live (share-image label, Actions on Node 24). Only the
+  `showcase-refresh` Edge Function is NOT redeployed: the 2026-11-10 run still says The FWA "skipped (HTTP 404)".
+  The code on main already has `off:` for The FWA and Lapa Ninja (supabase/functions/showcase-refresh/galleries.ts).
+- Blocker: the PC's Supabase CLI login is the scoped token `openrefs-ci` (no edge_functions permission).
+  Likely cause: `supabase login` run inside C:\Projects\ref-index picks up SUPABASE_ACCESS_TOKEN from .env.local
+  (the CI token) and stores it, so it "logs in" instantly with no browser. The account also has an older full
+  token "cli_Hosni@HAHO-ROG" (LEGACY). Owner fix, from a folder WITHOUT .env.local:
+    cd C:\Projects ; .\ref-index\node_modules\.bin\supabase logout --yes ; .\ref-index\node_modules\.bin\supabase login --agent no
+  then approve in the browser; a new cli_ token should appear at supabase.com/dashboard/account/tokens.
+  Check: `supabase functions list` lists showcase-refresh. Deploy (JWT check off, as cron calls it that way):
+    .\node_modules\.bin\supabase functions deploy showcase-refresh --no-verify-jwt
+  Verify with the next 03:00 UTC run: The FWA and Lapa Ninja report "off (...)". The daily PC job uses the same
+  CLI login for DB writes, so a full token keeps it working.
+- Owner decisions still open: Flagged queue in /curate (420), 12 unsure timeouts (tmp/site-audit/unsure-timeouts.json),
+  disable the PC job after 3 good CI runs (ask first), copy C:\Projects\ref-index-backup-2026-11-05 off this disk.
+- docs/oracle/ is untracked and not from this work; left alone.
