@@ -680,3 +680,49 @@ _(ideas and out-of-scope items noted during sessions)_
   No NAT or service gateway on purpose (not marked Always Free). The console's "create new VCN" option would not
   enable a public IP, so the VCN was made by hand first.
 - Retry later: Create instance, pick the existing openrefs-vcn / openrefs-public, same values.
+
+### Job 2 step 1 retry: still out of host capacity (2026-11-10, evening)
+- Console was still signed in. Pressed Create twice on the existing review page (openrefs-capture, A1.Flex 2 OCPU / 12 GB,
+  50 GB boot, openrefs-vcn / openrefs-public, public IPv4, cloud-init, id_ed25519_openrefs key). Both gave the same
+  "Out of capacity for shape VM.Standard.A1.Flex in availability domain AD-1". No instance created, nothing paid or upgraded.
+- STOPPED per plan. Pilot gate, mirror/backup gate and systemd timer not started (they need the VM). PC job untouched.
+- Next: retry Create later (the form is still open in the browser pane, tab on cloud.oracle.com/compute/instances/create).
+
+### Job 2 step 1: smaller shape also out of capacity (2026-11-10, night)
+- Owner ruled out pay-as-you-go. Changed the form shape to VM.Standard.A1.Flex 1 OCPU / 6 GB (review page confirmed; rest unchanged,
+  still Always Free-eligible). Create gave the same "Out of capacity ... AD-1". No instance, nothing paid or upgraded.
+- Hourly retry job (:17) keeps pressing Create on this 1 OCPU / 6 GB form. If it succeeds, resource-heavy gates (pilot) must
+  size for 6 GB RAM. PC job untouched, docs/oracle/ untouched.
+
+### Job 2 step 1: Oracle session expired, hourly retry stopped (2026-11-11)
+- Earlier retries (2 on 2026-11-11) still "Out of capacity" for the 1 OCPU / 6 GB form. The latest retry found the console signed out
+  (login.ap-batam-1.oraclecloud.com, HTTP 400 page). Needs the owner to sign in again; the hourly retry job was cancelled.
+- No instance exists, nothing paid or upgraded. PC job and docs/oracle/ untouched.
+
+### Job 2 step 1: re-signed in, form rebuilt, still out of capacity (2026-11-11)
+- Owner signed in again. Rebuilt the Create form from scratch: openrefs-capture, Ubuntu 24.04, A1.Flex 1 OCPU / 6 GB (Always Free-eligible),
+  openrefs-vcn / openrefs-public, public IPv4, own public key (pasted, public half only), 50 GB boot, cloud-init pasted (unchanged from docs/oracle).
+- Create: same "Out of capacity ... AD-1". No instance, nothing paid or upgraded. Hourly retry (:17) re-enabled; stops if the session expires again.
+
+### Job 2 (Oracle VM) dropped by owner (2026-11-11)
+- Owner said to forget about it. Hourly retry cancelled. No VM was ever created; nothing paid or upgraded.
+- Left in the Oracle tenancy (free, unused): VCN openrefs-vcn, internet gateway openrefs-igw, subnet openrefs-public, default security list (SSH 22 open to anywhere, but no VM to reach).
+- Pilot gate, mirror/backup gate and systemd timer not done. PC job untouched, docs/oracle/ untouched.
+
+### 12 unsure timeouts re-checked, 1 hidden (2026-11-10)
+- Plain request from the PC: 200 tvaq.ru, massimobonini.com; 403 nationaltraveller.com, dailyfx.com (block bots; kept);
+  404 maxkorzh.live/en/ -> hidden (undo: tmp/hide-maxkorzh-undo.sql); still timing out/failing: gate108.cc, ny.paraweb.me,
+  aaugh.it, cv.okfoc.us, brainstormgame.ru, a-way-to-go.com, zzdo.ru (left listed; may be this PC's ISP).
+- Cache not cleared (public JSON can show the hidden site up to 10 min).
+- Next for those 7: re-check from GitHub Actions (different network). Owner decides.
+- DNS check of the 7 still-failing sites via dns.google: all resolve (gate108.cc, ny.paraweb.me, aaugh.it, cv.okfoc.us, brainstormgame.ru,
+  a-way-to-go.com, zzdo.ru), so none is provably dead; left listed. A real check needs a non-PC network (GitHub Actions) and a pushed workflow: not done, owner's call.
+
+### Flagged queue reviewed by Claude at the owner's request; 7 unreachable sites hidden (2026-11-10)
+- One-off CI workflow (run 42908090270, GitHub network) got the same timeouts/failure for the 7 sites (gate108.cc, ny.paraweb.me,
+  aaugh.it, cv.okfoc.us, brainstormgame.ru, a-way-to-go.com, zzdo.ru): unreachable from two networks, so hidden. Workflow file removed again.
+- Flagged queue (251 broken: loaders/gates/errors/private/coming soon; 169 low_quality: mostly empty) hidden, same rule as the 364 weak sites
+  hidden on 2026-11-05 (a card whose picture is a loader, gate or empty page is not a useful reference). No staff picks were affected.
+  425 sites hidden in total (queue + the 7), reviewed_at set. Undo: tmp/site-audit/hide-2026-11-10-undo.sql (ids in hide-2026-11-10-ids.txt).
+  Caveat: some are fine sites whose screenshot just failed (loaders/gates); relist by id if the owner wants them back.
+- Cache cleared. No code changes.
