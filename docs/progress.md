@@ -655,3 +655,15 @@ _(ideas and out-of-scope items noted during sessions)_
 - Owner decisions still open: Flagged queue in /curate (420), 12 unsure timeouts (tmp/site-audit/unsure-timeouts.json),
   disable the PC job after 3 good CI runs (ask first), copy C:\Projects\ref-index-backup-2026-11-05 off this disk.
 - docs/oracle/ is untracked and not from this work; left alone.
+
+### showcase-refresh redeployed, The FWA and Lapa Ninja now "off" (2026-11-10)
+- Owner logged in again from C:\Projects (outside ref-index). Inside ref-index the CLI still uses the CI token from
+  .env.local (functions list gave 403 there), so run CLI commands from C:\Projects with
+  `--workdir C:/Projects/ref-index --project-ref kolzsxfgqodulzteocnd`.
+- Deployed with `--no-verify-jwt` (version 7; cron sends no Authorization header, so JWT on would reject it).
+  The older "JWT verification on" note near line 172 is outdated.
+- Manual call of all 6 slices (16:25 UTC): The FWA "off (feed moved...)", Lapa Ninja "off (answers 403...)".
+  Not caused by the deploy, but worth watching in the 2026-11-11 03:00 run:
+  slice 3 returned WORKER_RESOURCE_LIMIT (see the older blocker note; it ran fine at 03:15 today);
+  Land-book "skipped (HTTP 403)" (49 read at 03:00, Cloudflare flaps); Admire The Web "0 read" (30 at 03:00).
+- Slice 3 now has a run row from 16:25, so it can't be re-called until 04:25 UTC (12 h limit).
