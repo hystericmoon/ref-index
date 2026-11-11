@@ -736,3 +736,61 @@ _(ideas and out-of-scope items noted during sessions)_
 - Owner decisions still open: copy C:\Projects\ref-index-backup-2026-11-05 off this disk; disable the PC job after 3 good CI runs (ask first).
   Flagged queue and 12 timeouts are done (425 hidden; undo tmp/site-audit/hide-2026-11-10-undo.sql).
 - No background jobs or scheduled retries are running.
+
+### Checked for the 2026-11-11 03:00 UTC showcase-refresh run: not run yet (2026-11-10, 23:12 UTC)
+- Too early: the PC clock reads 2026-11-10 23:12 UTC, and the latest `showcase_refresh_runs` rows (ids 45-50) are still the manual call of 2026-11-10 16:24-16:27 UTC. No 03:00 run exists. Report only, nothing changed.
+- What those 16:2x rows show (not the 03:00 run): The FWA "off", Lapa Ninja "off"; slice 3 (id 48) has a bare `{"slice": 3}` report, so it hit WORKER_RESOURCE_LIMIT; Land-book "skipped (HTTP 403)"; Admire The Web "0 read".
+- Next: re-read after 03:00 UTC (10:00 Batam), same query: `select id, ran_at, report from showcase_refresh_runs order by ran_at desc limit 8`.
+
+### Re-check 2026-11-11 14:14 UTC: no 03:00 UTC showcase-refresh run was recorded
+- `showcase_refresh_runs` still ends at id 50 (2026-11-10 16:27 UTC, the manual call). Nothing from 2026-11-11 03:00 UTC, so the cron did not fire or did not log a row. Report only, nothing changed.
+- Open: check the cron job (pg_cron / cron.job_run_details) and the Edge Function logs for 03:00 UTC. The FWA / Lapa Ninja "off" and the other three items cannot be confirmed from a scheduled run yet.
+
+### Why no 03:00 UTC run was logged on 2026-11-11 (found 14:30 UTC, read-only)
+- Cron fired on time: jobs 2-7 (`showcase-refresh-slice-0..5`) all "succeeded" at 03:00-03:25 UTC. But every call got HTTP 429 `{"skipped":"last run ..."}` (net._http_response ids 46-51): the function's 12 h limit, because the manual 6-slice call ran at 16:24-16:27 UTC on 2026-11-10 (only ~10.6 h before). Nothing was refreshed and no report row was written.
+- So the four checks (The FWA/Lapa Ninja off, slice 3 WORKER_RESOURCE_LIMIT, Land-book 403, Admire The Web 0) still can't be confirmed from a scheduled run. Next chance: 2026-11-12 03:00 UTC (the 12 h window is long past). Avoid manual slice calls before then.
+- No changes made (read-only queries on cron.job, cron.job_run_details, net._http_response).
+
+### Plan: curate to the best, expand search and tags (2026-11-11, plan only, nothing changed)
+- Facts: 12,308 shown on the homepage (listed, not dead; hidden are never counted). 12,319 listed, 0 staff picks, 2,473 in 2+ galleries ("top" view).
+  9,933 hidden: 8,389 never reviewed with no picture (backlog), ~1,500 hidden by review (low_quality 533, broken 355, other 622). Do NOT delete hidden rows:
+  the refresh does `insert ... on conflict (name, url) do nothing` (migration 20261029000100), so a deleted row comes back as a new listed site.
+- Search today (search_showcase, migration 20261106000100): substring `like` on name, url, tags and gallery name; no typo tolerance, no synonyms, no relevance rank.
+  Order is staff_pick, has picture, gallery_count, first_seen. Categories: 20 topic-only ids (agency 2,431 ... design-tools 8, ui-kit 36, web3 100); `tags` text[] is free text.
+  Facet/tag tables (5 facets, 49 tags) belong to the private screens library (1 screen), not to the directory.
+- Steps (each ships alone, in this order):
+  1. Best-of tier: score listed sites (staff pick, gallery_count, award galleries, ai_flag clean, has screenshot), write a ranked shortlist to tmp/, owner approves in /curate,
+     then set staff_pick on the approved set (reversible, nothing hidden or deleted). Open: target size (500 / 1,500 / 3,000) and criteria.
+  2. Search: pg_trgm similarity + synonyms, rank by relevance first, then the current order; keep the URL-state rule (searchParams).
+  3. Tags: add style, layout, colour, tech and mood dimensions beside the 20 categories (new migration, then ai-categorize.ts backfill; hand edits in categories_set_at stay).
+  4. Refresh fixes: blocklist table checked by the refresh (lets hidden rows be deleted safely), cron overrides the 12 h limit, split slice 3 (WORKER_RESOURCE_LIMIT),
+     drop or replace Land-book (403) and Admire The Web (0 read).
+- Owner decisions open: target size, how "best" is judged, whether the 8,389 backlog gets a capture retry.
+
+### Step 1 shortlist built, NOT applied (2026-11-11)
+- Owner chose ~1,500. Pool: 12,193 listed sites with a picture, a link and no AI flag. Score = sum of gallery weights (Awwwards, CSS Design Awards, Apple Design Awards 3;
+  Godly, Httpster, Minimal Gallery, One Page Love, Land-book, SiteInspire, Curated, CSS Winner 2; Brutalist 1.5; others 1) + 2 if in 3+ galleries + 1 if reviewed.
+  Taken best first, max 375 per first category. Script: scratchpad rank.mjs; output in tmp/best-of/ (shortlist.json, shortlist-ids.txt, apply-staff-pick.sql, undo-staff-pick.sql).
+- Result: 1,500 picked, cutoff score 5, where 435 sites tie (cut by newest first_seen, so the last ~300 are arbitrary). agency hits the 375 cap; dev (6), education (14), web3 (12) are thin because the pool is thin.
+- Nothing written to the database. Next: owner reviews the shortlist, then run apply-staff-pick.sql (undo file ready), clear cache.
+
+### Step 1 applied: 1,500 staff picks set (2026-11-11)
+- Ran tmp/best-of/apply-staff-pick.sql: staff_pick = true on 1,500 listed sites (verified: 1,500 picks, 0 not listed, 12,319 still listed, nothing hidden or deleted). Undo: tmp/best-of/undo-staff-pick.sql.
+- Homepage "top" view is still 2,473 (it is staff_pick OR 2+ galleries, and all 1,500 picks are already in 2+ galleries). Picks now sort first in search. To make "top" show only the 1,500, change the view rule in search_showcase / showcase_view_counts (new migration): not done.
+- Public JSON is edge-cached up to 10 min, so the order may take that long to change.
+
+### Step 1 finished: 6 un-picked, "top" view = staff picks only (2026-11-11)
+- Un-picked 6 dated/one-off pages (Atlassian infographic, Clique: Defiantones, Veley / Ross Wedding, Design Week Portland, Not-Another-Bill, Temporary Measures): 1,494 picks.
+  Kept the 5 Apple Design Award apps. Undo for all picks: tmp/best-of/undo-staff-pick.sql (the 6 were also in apply-staff-pick.sql; unpick-6.sql is the 6 alone).
+- Migration 20261111000100_showcase_top_is_staff_picks.sql pushed (search_showcase, showcase_view_counts, showcase_category_counts: top = staff_pick). Live: top 1,494, all 12,308, archive 11.
+  To revert the rule: re-create the three functions from 20261106000100 / 20261029000500 / 20261029000700. Public JSON edge-cached up to 10 min. Not code-built or linted (comment-only change in src/lib/db/showcase.ts).
+- Next: step 2 (search), step 3 (tags), step 4 (refresh fixes). Optional: spot-check more of the score-5/6 picks in /curate.
+
+### Step 2 shipped: search v2 (2026-11-11)
+- Migration 20261111000200_showcase_search_relevance.sql pushed. search_showcase keeps its signature, so no app code changed. New: relevance ranking (exact name > prefix > word > substring > category > tag > gallery > url, +30 for staff picks);
+  accent-insensitive (unaccent via new `name_norm`/`url_norm` columns kept by trigger showcase_items_set_norm, backfilled); category and synonym matching
+  (table showcase_search_synonyms, ~150 terms, RLS public read: "restaurant"/"cafe" -> food, "store" -> shop, "crypto" -> web3 ...; edit rows to add more);
+  typo tolerance ("resturant" -> Restaurant sites, "crypo" -> Cryptogram) that only runs when the normal match finds nothing. Every word must still match (AND).
+- Tested in a rolled-back transaction, then live: restaurant 472, store 828, portfolio 1,774, minimal 2,146, resturant 5. Timing live (60 rows): 150-290 ms for searches, 99 ms for the empty query (was ~24 ms),
+  vs ~90 ms before; public JSON is edge-cached 10 min. Possible later speed-up: skip the match step when the query is empty.
+- Known gaps: transposition typos ("crpyto") miss (trigram only); tags are almost empty (201 of 12,308 sites), so tag search adds little until step 3. Not committed; lint/typecheck/build not run (no TS change). Rollback: re-create search_showcase from 20261111000100.

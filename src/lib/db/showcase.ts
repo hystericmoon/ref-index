@@ -37,7 +37,7 @@ const imageUrl = (path: string) => `${path.startsWith("img/details/") ? DETAILS 
 // capture is recorded.
 const smallThumbUrl = (path: string | null) => (path ? `${THUMBS_SMALL}/${path}` : null);
 
-/** top: staff picks and sites featured by 2+ galleries (counted internally, not shown) · all: every live entry. Dead sites are hidden, not shown. */
+/** top: staff picks only (the curated best-of) · all: every live entry. Dead sites are hidden, not shown. */
 export type ShowcaseView = "top" | "all";
 export const SHOWCASE_VIEWS: ShowcaseView[] = ["top", "all"];
 
