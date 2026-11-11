@@ -8,7 +8,8 @@ import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { amEditor } from "@/app/curate/actions";
 import { Beam, LiquidSwitch, Orb } from "@/components/effects";
 import { CATEGORIES } from "@/lib/categories";
-import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation } from "@/lib/db/showcase";
+import type { CategoryCounts, ShowcaseEntry, ShowcaseView as Curation, StyleCounts } from "@/lib/db/showcase";
+import { STYLE_GROUPS, STYLES } from "@/lib/styles";
 
 // Curation controls only load for editors, so visitors don't download them.
 const EditorTools = dynamic(() => import("@/app/curate/editor-tools").then((m) => m.EditorTools));
@@ -21,7 +22,7 @@ const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "i
 /** Supabase keeps the session in readable `sb-…-auth-token` cookies; without one nobody is signed in. */
 const mightBeSignedIn = () => /(?:^|; )sb-[^=]*-auth-token/.test(document.cookie);
 
-type Filters = { view: Curation; q: string; category: string };
+type Filters = { view: Curation; q: string; category: string; styles: string[] };
 
 function hostOf(url: string | null) {
   if (!url) return "";
@@ -33,18 +34,19 @@ function hostOf(url: string | null) {
 }
 
 /** Keep the filters in the URL so a link, a reload or the Back button reproduces what you see. */
-function useUrlState({ view, q, category }: Filters) {
+function useUrlState({ view, q, category, styles }: Filters) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const set = (k: string, v: string) => (v ? params.set(k, v) : params.delete(k));
     set("view", view === "top" ? "" : view);
     set("q", q.trim());
     set("category", category);
+    set("style", styles.join(","));
     // Old links may still carry the gallery filter, which no longer exists.
     params.delete("gallery");
     const search = params.toString();
     window.history.replaceState(window.history.state, "", `${window.location.pathname}${search ? `?${search}` : ""}`);
-  }, [view, q, category]);
+  }, [view, q, category, styles]);
 }
 
 function SearchField({
@@ -98,11 +100,12 @@ function SearchField({
 
 type ShowcasePage = { items: ShowcaseEntry[]; total: number };
 
-function showcaseUrl(view: Curation, q: string, category: string, offset: number) {
+function showcaseUrl(view: Curation, q: string, category: string, styles: string[], offset: number) {
   const params = new URLSearchParams();
   if (view !== "top") params.set("view", view);
   if (q.trim()) params.set("q", q.trim());
   if (category) params.set("category", category);
+  if (styles.length) params.set("style", styles.join(","));
   if (offset) params.set("offset", String(offset));
   return `/showcase.json${params.size ? `?${params}` : ""}`;
 }
@@ -128,6 +131,33 @@ function CategoryChips({ value, onChange, counts }: { value: string; onChange: (
       {shown.filter((c) => c.group === "type").map((c) => chip(c.id, c.label, counts[c.id] ?? 0))}
       <span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-border" />
       {shown.filter((c) => c.group === "industry").map((c) => chip(c.id, c.label, counts[c.id] ?? 0))}
+    </div>
+  );
+}
+
+/** Chips for the style, layout and colour tags; several can be on at once (a site must have all of them). Hidden until tags exist. */
+function StyleChips({ value, onChange, counts }: { value: string[]; onChange: (ids: string[]) => void; counts: Record<string, number> }) {
+  const groups = STYLE_GROUPS.map((g) => ({ ...g, tags: STYLES.filter((t) => t.group === g.id && (counts[t.id] || value.includes(t.id))) })).filter((g) => g.tags.length);
+  if (!groups.length) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      {groups.map((g) => (
+        <div key={g.id} role="group" aria-label={g.label} className="-mx-4 flex items-center gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+          <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">{g.label}</span>
+          {g.tags.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              aria-pressed={value.includes(t.id)}
+              onClick={() => onChange(value.includes(t.id) ? value.filter((v) => v !== t.id) : [...value, t.id].slice(-4))}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground sm:min-h-9"
+            >
+              {t.label}
+              <span className="font-mono text-[11px] opacity-70">{(counts[t.id] ?? 0).toLocaleString("en-US")}</span>
+            </button>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
@@ -286,12 +316,14 @@ function ShowcaseView({
   initial,
   counts,
   categoryCounts,
+  styleCounts,
   initialFilters,
   initialTotal,
 }: {
   initial: ShowcaseEntry[];
   counts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
+  styleCounts: StyleCounts;
   initialFilters: Filters;
   initialTotal: number;
 }) {
@@ -303,7 +335,8 @@ function ShowcaseView({
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState(initialFilters.q);
   const [category, setCategory] = useState(initialFilters.category);
-  useUrlState({ view: curation, q, category });
+  const [styles, setStyles] = useState(initialFilters.styles);
+  useUrlState({ view: curation, q, category, styles });
   const firstRender = useRef(true);
   const request = useRef(0);
   // Editors get curation tools on each card; everyone else sees the plain page.
@@ -321,7 +354,7 @@ function ShowcaseView({
     const id = ++request.current;
     setLoading(true);
     try {
-      const res = await fetch(showcaseUrl(curation, q, category, offset));
+      const res = await fetch(showcaseUrl(curation, q, category, styles, offset));
       if (!res.ok) throw new Error(String(res.status));
       const page = (await res.json()) as ShowcasePage;
       if (id !== request.current) return;
@@ -342,7 +375,7 @@ function ShowcaseView({
     const timer = window.setTimeout(() => load(0), 250);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the filters change
-  }, [curation, q, category]);
+  }, [curation, q, category, styles]);
 
   const list = entries;
   const gridRef = useRef<HTMLUListElement>(null);
@@ -370,6 +403,11 @@ function ShowcaseView({
         value={category}
         onChange={setCategory}
         counts={Object.fromEntries(Object.entries(categoryCounts).map(([id, n]) => [id, n[curation]]))}
+      />
+      <StyleChips
+        value={styles}
+        onChange={setStyles}
+        counts={Object.fromEntries(Object.entries(styleCounts).map(([id, n]) => [id, n[curation]]))}
       />
       <p aria-live="polite" className="flex min-h-6 flex-wrap items-center gap-x-2 text-sm text-muted-foreground tabular-nums">
         {matchTotal === total ? (
@@ -435,12 +473,14 @@ export function Directory({
   showcase,
   viewCounts,
   categoryCounts,
+  styleCounts,
   initialFilters,
   initialTotal,
 }: {
   showcase: ShowcaseEntry[];
   viewCounts: Record<Curation, number>;
   categoryCounts: CategoryCounts;
+  styleCounts: StyleCounts;
   initialFilters: Filters;
   initialTotal: number;
 }) {
@@ -449,6 +489,7 @@ export function Directory({
       initial={showcase}
       counts={viewCounts}
       categoryCounts={categoryCounts}
+      styleCounts={styleCounts}
       initialFilters={initialFilters}
       initialTotal={initialTotal}
     />

@@ -41,7 +41,7 @@ const smallThumbUrl = (path: string | null) => (path ? `${THUMBS_SMALL}/${path}`
 export type ShowcaseView = "top" | "all";
 export const SHOWCASE_VIEWS: ShowcaseView[] = ["top", "all"];
 
-export type ShowcaseQuery = { q?: string; medium?: string; gallery?: string; view?: ShowcaseView; category?: string; offset?: number; limit?: number };
+export type ShowcaseQuery = { q?: string; medium?: string; gallery?: string; view?: ShowcaseView; category?: string; styles?: string[]; offset?: number; limit?: number };
 
 /** One page of showcase items matching a search (the `search_showcase` RPC), newest first. */
 export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
@@ -53,6 +53,8 @@ export async function searchShowcase(db: DbClient, query: ShowcaseQuery = {}) {
     p_limit: query.limit ?? 60,
     p_view: query.view ?? "top",
     p_category: query.category || undefined,
+    // Only sent when set, so search keeps working before migration 20261111000300 is applied.
+    ...(query.styles?.length ? { p_styles: query.styles } : {}),
   });
   if (error) throw error;
   return {
@@ -85,6 +87,15 @@ export async function getCategoryCounts(db: DbClient): Promise<CategoryCounts> {
   return Object.fromEntries(
     data.map((row) => [row.category, { top: Number(row.top), all: Number(row.everything) }]),
   );
+}
+
+export type StyleCounts = Record<string, Record<ShowcaseView, number>>;
+
+/** How many items carry each style tag (src/lib/styles.ts) in each view. Empty until the tags are filled. */
+export async function getStyleCounts(db: DbClient): Promise<StyleCounts> {
+  const { data, error } = await db.rpc("showcase_style_counts");
+  if (error) return {}; // the style migration isn't applied yet
+  return Object.fromEntries(data.map((row) => [row.style, { top: Number(row.top), all: Number(row.everything) }]));
 }
 
 /** How many items each gallery has featured, A–Z. */

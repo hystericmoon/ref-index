@@ -491,6 +491,7 @@ export type Database = {
           p_medium?: string
           p_offset?: number
           p_query?: string
+          p_styles?: string[]
           p_view?: string
         }
         Returns: {
@@ -518,6 +519,14 @@ export type Database = {
           archive: number
           category: string
           everything: number
+          top: number
+        }[]
+      }
+      showcase_style_counts: {
+        Args: never
+        Returns: {
+          everything: number
+          style: string
           top: number
         }[]
       }

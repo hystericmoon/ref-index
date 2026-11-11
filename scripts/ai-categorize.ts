@@ -10,12 +10,19 @@
 //    When the batch has ended, writes tmp/ai-categorize/categories.sql and prints the counts.
 // 3. supabase db query --linked -f tmp/ai-categorize/categories.sql, then delete batch.json.
 //
+// Style tags (src/lib/styles.ts: style, layout, colour) are a separate pass that only writes
+// showcase_items.styles (needs migration 20261111000300 applied):
+//    node scripts/ai-categorize.ts submit --task styles [--picks] [--limit N]
+//    node scripts/ai-categorize.ts collect      (writes tmp/ai-categorize/styles.sql)
+// --picks restricts it to staff picks. Items already tagged (styles_checked_at set) are skipped.
+//
 // Needs ANTHROPIC_API_KEY, NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY in
 // .env.local, and tmp/site-meta/meta.ndjson from site-meta.ts.
 
 import Anthropic from "@anthropic-ai/sdk";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { CATEGORIES, CATEGORY_IDS } from "../src/lib/categories.ts";
+import { STYLE_GROUPS, STYLES } from "../src/lib/styles.ts";
 
 function env(name: string): string {
   const line = readFileSync(".env.local", "utf8")
@@ -67,6 +74,27 @@ const SCHEMA = {
   additionalProperties: false,
 } as const;
 
+const STYLE_SYSTEM = `You tag websites and apps with visual style words for a gallery of design references,
+so designers can filter by look. Judge mainly by the screenshot; the text is only context.
+
+Tags, as id: label (meaning):
+${STYLE_GROUPS.map((g) => `${g.label.toUpperCase()} (pick up to ${g.max}):\n${STYLES.filter((t) => t.group === g.id).map((t) => `- ${t.id}: ${t.label} (${t.hint})`).join("\n")}`).join("\n\n")}
+
+Pick only tags that clearly fit what is visible on the first screen; fewer is better than a stretch.
+Colour: always pick "dark" or "light" for the background, then up to two more that describe the palette
+or the dominant accent hue. Layout may be empty. With no screenshot, return empty lists.`;
+
+const STYLE_SCHEMA = {
+  type: "object",
+  properties: {
+    style: { type: "array", items: { type: "string", enum: STYLES.filter((t) => t.group === "style").map((t) => t.id) } },
+    layout: { type: "array", items: { type: "string", enum: STYLES.filter((t) => t.group === "layout").map((t) => t.id) } },
+    colour: { type: "array", items: { type: "string", enum: STYLES.filter((t) => t.group === "colour").map((t) => t.id) } },
+  },
+  required: ["style", "layout", "colour"],
+  additionalProperties: false,
+} as const;
+
 type Meta = { id: string; title?: string; description?: string; keywords?: string; headings?: string };
 type Item = { id: string; name: string; url: string | null; platform: string; thumb_path: string | null };
 
@@ -78,6 +106,9 @@ async function submit() {
   if (existsSync(BATCH_FILE)) throw new Error(`${BATCH_FILE} exists; run collect first, or delete it to start over.`);
   const model = arg("model", "claude-haiku-5-5");
   const limit = Number(arg("limit", "100000"));
+  const task = arg("task", "categories");
+  const picksOnly = process.argv.includes("--picks");
+  if (task !== "categories" && task !== "styles") throw new Error(`Unknown --task ${task}`);
 
   const metas = new Map<string, Meta>();
   for (const line of readFileSync("tmp/site-meta/meta.ndjson", "utf8").split("\n")) {
@@ -86,11 +117,16 @@ async function submit() {
     metas.set(m.id, m);
   }
 
-  // Live, listed items the AI hasn't checked yet (dead ones sit in the archive already).
+  // Live, listed items the AI hasn't checked yet (dead ones sit in the archive already). The styles pass
+  // needs a picture and skips items tagged before.
+  const filter =
+    task === "styles"
+      ? `status=eq.listed&styles_checked_at=is.null&thumb_path=not.is.null${picksOnly ? "&staff_pick=eq.true" : ""}`
+      : `status=eq.listed&ai_checked_at=is.null&or=(thumb_path.not.is.null,thumb_checked_at.is.null)`;
   const items: Item[] = [];
   for (let from = 0; items.length < limit; from += 1000) {
     const response = await fetch(
-      `${supabaseUrl}/rest/v1/showcase_items?select=id,name,url,platform,thumb_path&status=eq.listed&ai_checked_at=is.null&or=(thumb_path.not.is.null,thumb_checked_at.is.null)&order=id`,
+      `${supabaseUrl}/rest/v1/showcase_items?select=id,name,url,platform,thumb_path&${filter}&order=id`,
       { headers: { apikey: env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"), range: `${from}-${from + 999}` } },
     );
     if (!response.ok) throw new Error(`Couldn't read showcase items: ${response.status}`);
@@ -124,8 +160,8 @@ async function submit() {
       params: {
         model,
         max_tokens: 2000,
-        system: [{ type: "text" as const, text: SYSTEM, cache_control: { type: "ephemeral" as const } }],
-        output_config: { effort: "low" as const, format: { type: "json_schema" as const, schema: SCHEMA } },
+        system: [{ type: "text" as const, text: task === "styles" ? STYLE_SYSTEM : SYSTEM, cache_control: { type: "ephemeral" as const } }],
+        output_config: { effort: "low" as const, format: { type: "json_schema" as const, schema: task === "styles" ? STYLE_SCHEMA : SCHEMA } },
         messages: [{ role: "user" as const, content }],
       },
     };
@@ -133,12 +169,12 @@ async function submit() {
 
   if (!requests.length) return console.error("Nothing to check.");
   const batch = await client().messages.batches.create({ requests });
-  writeFileSync(BATCH_FILE, JSON.stringify({ id: batch.id, model, count: requests.length }));
+  writeFileSync(BATCH_FILE, JSON.stringify({ id: batch.id, model, task, count: requests.length }));
   console.error(`Sent ${requests.length} sites to ${model} as batch ${batch.id}.`);
 }
 
 async function collect() {
-  const { id } = JSON.parse(readFileSync(BATCH_FILE, "utf8")) as { id: string };
+  const { id, task } = JSON.parse(readFileSync(BATCH_FILE, "utf8")) as { id: string; task?: string };
   const anthropic = client();
   const batch = await anthropic.messages.batches.retrieve(id);
   if (batch.processing_status !== "ended") {
@@ -147,6 +183,8 @@ async function collect() {
     process.exitCode = 2;
     return;
   }
+
+  if (task === "styles") return collectStyles(anthropic, id);
 
   const rows: string[] = [];
   const counts = new Map<string, number>();
@@ -187,6 +225,47 @@ async function collect() {
   writeFileSync(`${DIR}/categories.sql`, sql.join("\n"));
   console.error([...counts].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(" · "));
   console.error(`Looks: ${[...looks].map(([k, n]) => `${k} ${n}`).join(" · ")}`);
+  console.error(`${rows.length} answered, ${failed} failed. Tokens: ${input} in, ${output} out.`);
+}
+
+async function collectStyles(anthropic: Anthropic, id: string) {
+  const rows: string[] = [];
+  const samples: string[] = [];
+  const counts = new Map<string, number>();
+  let failed = 0;
+  let input = 0;
+  let output = 0;
+  const known = new Map(STYLES.map((t) => [t.id, t]));
+  for await (const result of await anthropic.messages.batches.results(id)) {
+    if (result.result.type !== "succeeded") {
+      failed++;
+      continue;
+    }
+    const message = result.result.message;
+    input += message.usage.input_tokens + (message.usage.cache_read_input_tokens ?? 0) + (message.usage.cache_creation_input_tokens ?? 0);
+    output += message.usage.output_tokens;
+    const text = message.content.find((b) => b.type === "text")?.text;
+    if (message.stop_reason !== "end_turn" || !text) {
+      failed++;
+      continue;
+    }
+    const answer = JSON.parse(text) as Record<string, string[]>;
+    // Enforce the per-group limits and valid ids, whatever the model returned.
+    const tags = STYLE_GROUPS.flatMap((g) => (answer[g.id] ?? []).filter((t) => known.get(t)?.group === g.id).slice(0, g.max));
+    const unique = [...new Set(tags)];
+    for (const t of unique) counts.set(t, (counts.get(t) ?? 0) + 1);
+    rows.push(`('${result.custom_id}'::uuid, array[${unique.map((t) => `'${t}'`).join(",")}]::text[])`);
+    samples.push(`${result.custom_id}\t${unique.join(",")}`);
+  }
+  const sql = [];
+  for (let i = 0; i < rows.length; i += 2000) {
+    sql.push(
+      `update public.showcase_items s set styles = v.t, styles_checked_at = now() from (values ${rows.slice(i, i + 2000).join(",\n")}) v(id, t) where s.id = v.id;`,
+    );
+  }
+  writeFileSync(`${DIR}/styles.sql`, sql.join("\n"));
+  writeFileSync(`${DIR}/styles-answers.tsv`, samples.join("\n"));
+  console.error([...counts].sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(" · "));
   console.error(`${rows.length} answered, ${failed} failed. Tokens: ${input} in, ${output} out.`);
 }
 

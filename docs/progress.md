@@ -808,3 +808,16 @@ _(ideas and out-of-scope items noted during sessions)_
 - Undo files (gitignored, on this disk): tmp/best-of/undo-staff-pick.sql, unpick-6.sql, shortlist.json. Rollback of the top rule / search: re-create the functions from migrations 20261106000100 / 20261029000500 / 20261029000700.
 - Owner decisions still open: copy C:\Projects\ref-index-backup-2026-11-05 off this disk; disable the PC job after 3 good CI runs (ask first). docs/oracle/ and .claude/ are untracked and not from this work.
 - No background jobs or scheduled retries are running. Not run this session: `pnpm build`, browser check of the live site.
+
+### Step 3 tags: built, NOT applied, NO API money spent (2026-11-11, late)
+- Part 1 (refresh check): the 2026-11-12 03:00 UTC run has not happened (PC clock 2026-11-11 15:55 UTC; latest `showcase_refresh_runs` id 50 is still the manual call of 2026-11-10 16:24-16:27). Nothing changed. The four answers must still be read after 03:00 UTC on 11-12.
+  From the 11-10 manual rows (not the scheduled run): FWA "off", Lapa Ninja "off", slice 3 (id 48) bare `{"slice": 3}` = WORKER_RESOURCE_LIMIT, Land-book "skipped (HTTP 403)", Admire The Web "0 read".
+- Code, committed: `src/lib/styles.ts` (34 tags: 12 style, 8 layout, 14 colour; ids unique across groups); migration `supabase/migrations/20261111000300_showcase_styles.sql`
+  (`styles text[]` + `styles_checked_at` on showcase_items, GIN index, ~100 style synonyms, `showcase_style_counts()`, `search_showcase` gains `p_styles text[]` filter + style words in relevance; old 7-arg function dropped);
+  `scripts/ai-categorize.ts` styles pass (`submit --task styles --picks`, then `collect` writes tmp/ai-categorize/styles.sql and styles-answers.tsv); filter chips (`StyleChips` in directory.tsx, URL `?style=minimal,dark`, AND match, hidden until tags exist).
+  App code only sends `p_styles` when a chip is on and treats a missing counts RPC as "no chips", so the site works before AND after the migration. lint (0 errors), typecheck, build pass.
+- NOT done: (1) the migration was NOT applied: `supabase db push` was denied by the auto-mode classifier. Apply it first: `node_modules/.bin/supabase db push --linked` (or `db query --linked -f` the file) from C:\Projects\ref-index. (2) The API run needs the owner's go (see cost below).
+- Taxonomy: style = minimal, bold, brutalist, editorial, playful, retro, futuristic, luxury, corporate, organic, illustrated, immersive (max 2); layout = grid, bento, asymmetric, centered, split, full-bleed, sidebar, horizontal (max 2);
+  colour = dark/light + monochrome, pastel, vibrant, neon, earthy, gradient + dominant hue red/orange/green/blue/purple/pink (max 3). Hints per tag are in styles.ts.
+- Cost estimate (assumption, check current pricing before go): Haiku 5.5 via Batches (half price), 1,494 picks, one 1280x800 screenshot (~1.4k tokens) + ~250 text + ~1k cached system, ~60 output => ~3.7M input + ~0.1M output tokens, roughly $2-4 total. The other ~10,800 sites would be ~7x that.
+- Next, in order: apply migration -> owner says go -> `node scripts/ai-categorize.ts submit --task styles --picks` -> wait -> `collect` -> `supabase db query --linked -f tmp/ai-categorize/styles.sql` -> delete tmp/ai-categorize/batch.json -> show 50 random rows from styles-answers.tsv joined to names for review -> clear cache -> check chips in browser.

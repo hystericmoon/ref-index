@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
-import { getCategoryCounts, getShowcaseItem, getViewCounts, searchShowcase, type ShowcaseQuery } from "./showcase";
+import { getCategoryCounts, getShowcaseItem, getStyleCounts, getViewCounts, searchShowcase, type ShowcaseQuery } from "./showcase";
 
 /**
  * Public showcase reads, kept in Next's data cache for 10 minutes so most visits skip the
@@ -16,8 +16,8 @@ export const cachedShowcasePage = unstable_cache((query: ShowcaseQuery) => searc
 export const cachedDirectoryCounts = unstable_cache(
   async () => {
     const db = createPublicClient();
-    const [viewCounts, categoryCounts] = await Promise.all([getViewCounts(db), getCategoryCounts(db)]);
-    return { viewCounts, categoryCounts };
+    const [viewCounts, categoryCounts, styleCounts] = await Promise.all([getViewCounts(db), getCategoryCounts(db), getStyleCounts(db)]);
+    return { viewCounts, categoryCounts, styleCounts };
   },
   ["directory-counts"],
   options,

@@ -1,6 +1,7 @@
 import { HeroDecor } from "@/components/hero-decor";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/brand";
 import { CATEGORY_IDS } from "@/lib/categories";
+import { parseStyles } from "@/lib/styles";
 import { SHOWCASE_VIEWS, THUMBS, THUMBS_SMALL, type ShowcaseView } from "@/lib/db/showcase";
 import { cachedDirectoryCounts, cachedShowcasePage } from "@/lib/db/showcase-cache";
 import { Directory } from "./directory";
@@ -18,11 +19,12 @@ export default async function Home({
   const one = (k: string) => (typeof params[k] === "string" ? params[k] : "");
   const filters = {
     q: one("q").slice(0, 100),
+    styles: parseStyles(one("style")),
     view: SHOWCASE_VIEWS.includes(one("view") as ShowcaseView) ? (one("view") as ShowcaseView) : "top",
     category: CATEGORY_IDS.has(one("category")) ? one("category") : "",
   };
   // Galleries aren't credited on the public site, so their names and counts aren't shown here.
-  const [showcase, { viewCounts, categoryCounts }] = await Promise.all([
+  const [showcase, { viewCounts, categoryCounts, styleCounts }] = await Promise.all([
     cachedShowcasePage({ ...filters, limit: FIRST_SCREEN }),
     cachedDirectoryCounts(),
   ]);
@@ -47,6 +49,7 @@ export default async function Home({
         showcase={showcase.items}
         viewCounts={viewCounts}
         categoryCounts={categoryCounts}
+        styleCounts={styleCounts}
         initialFilters={filters}
         initialTotal={showcase.total}
       />
