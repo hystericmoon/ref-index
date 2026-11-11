@@ -799,10 +799,10 @@ _(ideas and out-of-scope items noted during sessions)_
 - Shipped and committed (14bc4c3 + this entry, pushed to main): 1,494 staff picks (the "top" view = staff picks only), search v2 (relevance, accents, synonyms, typo tolerance), both migrations live.
   Hidden rows stay hidden, not deleted: the refresh's `on conflict (name, url) do nothing` would re-add deleted ones (a blocklist table, step 4, is needed before any delete).
 - Open, in order:
-  1. 2026-11-12 03:00 UTC showcase-refresh check (Sonnet, read-only). The 11-11 run was skipped (HTTP 429, 12 h limit after the manual call on 11-10). Query:
+  1. 2026-11-12 03:00 UTC showcase-refresh check (read-only first). The 11-11 run was skipped (HTTP 429, 12 h limit after the manual call on 11-10). Query:
      `select id, ran_at, report from showcase_refresh_runs order by ran_at desc limit 8` via the CLI from C:\Projects with `--workdir C:/Projects/ref-index --project-ref kolzsxfgqodulzteocnd`.
      Answer: The FWA / Lapa Ninja "off"? slice 3 WORKER_RESOURCE_LIMIT (a bare `{"slice": 3}` report)? Land-book 403? Admire The Web 0 read? Do NOT call slices manually before then.
-  2. Step 3 tags (Opus: taxonomy and quality judgment). Plan: new `styles text[]` column (style, layout, colour) next to `categories`; extend scripts/ai-categorize.ts (Message Batches, ANTHROPIC_API_KEY in .env.local);
+  2. Step 3 tags (Sonnet; same session as item 1). Plan: new `styles text[]` column (style, layout, colour) next to `categories`; extend scripts/ai-categorize.ts (Message Batches, ANTHROPIC_API_KEY in .env.local);
      run on the 1,494 picks first (a few dollars), review 50, then decide on the other ~10,800; add style words to showcase_search_synonyms; filter chips in the UI. Spend only after the owner says go.
   3. Step 4 refresh fixes: blocklist table, cron overrides the 12 h limit, split slice 3, replace Land-book / Admire The Web. Optional: speed up the empty query (99 ms, was 24 ms).
 - Undo files (gitignored, on this disk): tmp/best-of/undo-staff-pick.sql, unpick-6.sql, shortlist.json. Rollback of the top rule / search: re-create the functions from migrations 20261106000100 / 20261029000500 / 20261029000700.
