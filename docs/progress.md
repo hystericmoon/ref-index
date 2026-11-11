@@ -794,3 +794,17 @@ _(ideas and out-of-scope items noted during sessions)_
 - Tested in a rolled-back transaction, then live: restaurant 472, store 828, portfolio 1,774, minimal 2,146, resturant 5. Timing live (60 rows): 150-290 ms for searches, 99 ms for the empty query (was ~24 ms),
   vs ~90 ms before; public JSON is edge-cached 10 min. Possible later speed-up: skip the match step when the query is empty.
 - Known gaps: transposition typos ("crpyto") miss (trigram only); tags are almost empty (201 of 12,308 sites), so tag search adds little until step 3. Not committed; lint/typecheck/build not run (no TS change). Rollback: re-create search_showcase from 20261111000100.
+
+### Resume here (2026-11-11, end of session)
+- Shipped and committed (14bc4c3 + this entry, pushed to main): 1,494 staff picks (the "top" view = staff picks only), search v2 (relevance, accents, synonyms, typo tolerance), both migrations live.
+  Hidden rows stay hidden, not deleted: the refresh's `on conflict (name, url) do nothing` would re-add deleted ones (a blocklist table, step 4, is needed before any delete).
+- Open, in order:
+  1. 2026-11-12 03:00 UTC showcase-refresh check (Sonnet, read-only). The 11-11 run was skipped (HTTP 429, 12 h limit after the manual call on 11-10). Query:
+     `select id, ran_at, report from showcase_refresh_runs order by ran_at desc limit 8` via the CLI from C:\Projects with `--workdir C:/Projects/ref-index --project-ref kolzsxfgqodulzteocnd`.
+     Answer: The FWA / Lapa Ninja "off"? slice 3 WORKER_RESOURCE_LIMIT (a bare `{"slice": 3}` report)? Land-book 403? Admire The Web 0 read? Do NOT call slices manually before then.
+  2. Step 3 tags (Opus: taxonomy and quality judgment). Plan: new `styles text[]` column (style, layout, colour) next to `categories`; extend scripts/ai-categorize.ts (Message Batches, ANTHROPIC_API_KEY in .env.local);
+     run on the 1,494 picks first (a few dollars), review 50, then decide on the other ~10,800; add style words to showcase_search_synonyms; filter chips in the UI. Spend only after the owner says go.
+  3. Step 4 refresh fixes: blocklist table, cron overrides the 12 h limit, split slice 3, replace Land-book / Admire The Web. Optional: speed up the empty query (99 ms, was 24 ms).
+- Undo files (gitignored, on this disk): tmp/best-of/undo-staff-pick.sql, unpick-6.sql, shortlist.json. Rollback of the top rule / search: re-create the functions from migrations 20261106000100 / 20261029000500 / 20261029000700.
+- Owner decisions still open: copy C:\Projects\ref-index-backup-2026-11-05 off this disk; disable the PC job after 3 good CI runs (ask first). docs/oracle/ and .claude/ are untracked and not from this work.
+- No background jobs or scheduled retries are running. Not run this session: `pnpm build`, browser check of the live site.
