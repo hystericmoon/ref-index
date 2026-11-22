@@ -1,15 +1,17 @@
 // Daily showcase refresh, called by pg_cron (see migration 20261029000100). Reads each
 // gallery's newest picks and adds new names and gallery links; never deletes or edits.
 // Deployed without JWT verification so cron needs no stored key; a run log limits it to
-// one run per slice per 12 hours, so calling it can't be used to hammer the galleries.
+// one run per slice per 12 hours, so calling it can't be used to hammer the galleries. The cron
+// call (header x-refresh-cron) only has a 1 hour limit, so a manual run never makes cron skip.
 
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import { GALLERIES, readAllGalleries, resolveLive } from "./galleries.ts";
 
 const MIN_HOURS_BETWEEN_RUNS = 12;
+const MIN_HOURS_BETWEEN_CRON_RUNS = 1;
 
 // One call reads one slice of the galleries (?slice=0..SLICES-1); cron calls each slice in turn.
-const SLICES = 6;
+const SLICES = 7;
 
 Deno.serve(async (req) => {
   const slice = Number(new URL(req.url).searchParams.get("slice") ?? "0");
@@ -20,6 +22,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
+  const minHours = req.headers.get("x-refresh-cron") ? MIN_HOURS_BETWEEN_CRON_RUNS : MIN_HOURS_BETWEEN_RUNS;
   const { data: last } = await db
     .from("showcase_refresh_runs")
     .select("ran_at")
@@ -27,7 +30,7 @@ Deno.serve(async (req) => {
     .order("ran_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (last && Date.now() - Date.parse(last.ran_at) < MIN_HOURS_BETWEEN_RUNS * 3600_000) {
+  if (last && Date.now() - Date.parse(last.ran_at) < minHours * 3600_000) {
     return Response.json({ skipped: `last run ${last.ran_at}` }, { status: 429 });
   }
   const { data: run, error: runError } = await db.from("showcase_refresh_runs").insert({ report: { slice } }).select("id").single();

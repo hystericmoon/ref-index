@@ -228,7 +228,7 @@ export const GALLERIES: Gallery[] = [
     name: "Admire The Web",
     platform: "web",
     kind: "sitemap",
-    listing: "https://admiretheweb.com/sitemap.xml",
+    listing: "https://admiretheweb.com/sitemap-inspiration.xml",
     item: /^https:\/\/admiretheweb\.com\/inspiration\/(?!tag\/)[a-z0-9-]+\/$/,
     entryLive: /<a href="(https?:\/\/[^"]+)" target="_blank">https?:\/\//,
     entryName: /<h1[^>]*>([^<]+)<\/h1>/,

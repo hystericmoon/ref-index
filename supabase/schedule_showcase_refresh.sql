@@ -1,5 +1,5 @@
 -- Turns on the daily showcase refresh: every day from 03:00 UTC, pg_cron calls the showcase-refresh
--- Edge Function once per slice of galleries (6 slices, 5 minutes apart; one call can't read them all),
+-- Edge Function once per slice of galleries (7 slices, 5 minutes apart; one call can't read them all),
 -- which adds new gallery picks (never deletes).
 -- Apply after deploying the function (supabase functions deploy showcase-refresh --no-verify-jwt):
 --   .\node_modules\.bin\supabase db query --linked -f supabase/schedule_showcase_refresh.sql
@@ -17,10 +17,10 @@ select cron.schedule(
   format($job$
     select net.http_post(
       url := 'https://kolzsxfgqodulzteocnd.supabase.co/functions/v1/showcase-refresh?slice=%s',
-      headers := '{"Content-Type": "application/json"}'::jsonb,
+      headers := '{"Content-Type": "application/json", "x-refresh-cron": "1"}'::jsonb,
       body := '{}'::jsonb,
       timeout_milliseconds := 120000
     );
   $job$, s)
 )
-from generate_series(0, 5) as s;
+from generate_series(0, 6) as s;

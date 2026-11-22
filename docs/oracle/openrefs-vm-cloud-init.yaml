@@ -1,0 +1,45 @@
+#cloud-config
+# Openrefs capture VM: hardening and tooling only. No secrets in this file.
+package_update: true
+package_upgrade: true
+packages:
+  - unattended-upgrades
+  - fail2ban
+  - git
+  - curl
+  - ca-certificates
+  - gnupg
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    permissions: '0644'
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+  - path: /etc/openrefs/env
+    permissions: '0600'
+    owner: root:root
+    content: |
+      # Fill these in by hand on the VM. Never paste them into chat.
+      # SUPABASE_URL=
+      # SUPABASE_SECRET_KEY=
+      # R2_ACCESS_KEY_ID=
+      # R2_SECRET_ACCESS_KEY=
+      # CLOUDFLARE_ACCOUNT_ID=
+      # CLOUDFLARE_API_TOKEN=
+runcmd:
+  - systemctl restart ssh
+  - systemctl enable --now fail2ban
+  - dpkg-reconfigure -f noninteractive unattended-upgrades
+  - curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+  - apt-get install -y nodejs
+  - corepack enable
+  - useradd -m -s /bin/bash capture
+  - mkdir -p /opt/openrefs
+  - chown capture:capture /opt/openrefs
+  - su - capture -c 'git clone --depth 1 https://github.com/hystericmoon/ref-index /opt/openrefs/ref-index'
+  - su - capture -c 'cd /opt/openrefs/ref-index && pnpm install --frozen-lockfile'
+  - bash -c 'cd /opt/openrefs/ref-index && npx -y playwright@1.64.1 install-deps chromium'
+  - su - capture -c 'cd /opt/openrefs/ref-index && pnpm exec playwright install chromium'
+  - curl -fsSL https://tailscale.com/install.sh | sh
+  - touch /var/log/openrefs-setup-done
