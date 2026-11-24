@@ -1,0 +1,32 @@
+# Openrefs
+
+> Thousands of well-designed websites and apps, curated into one free, searchable collection of design references. Each entry is a link plus a screenshot, tagged by style, layout, colour and topic.
+
+## Data for agents
+
+- Full dump (all live sites, one JSON file, refreshed daily): https://ref-index.vercel.app/references.json
+  Download it once and filter locally. Shape: `{ generated, count, items: [...] }`.
+- Search API (paged, 120 per page): https://ref-index.vercel.app/showcase.json?q=dark+minimal&style=dark,minimal&category=portfolio&view=all&offset=0
+  Parameters: `q` (free text), `style` (comma list of tags below), `category` (one topic id), `medium` (all, web, 3d, mobile), `view` (`top` = staff picks, `all` = every live site), `offset`.
+- One human page per site: https://ref-index.vercel.app/site/{id}
+
+## Item fields (references.json)
+
+- `id`, `name`, `url` (the live site), `page` (its Openrefs page), `image` (screenshot of the first screen, WebP, 1280x800; may be the site's share image instead)
+- `medium`: web, 3d, ios, android or mobile
+- `styles`: tags from the lists below (up to 2 look, 2 layout, 3 colour; every tagged site has `dark` or `light`)
+- `categories`: topic ids, e.g. portfolio, agency, product, shop, editorial, event, ui-kit, design-tools, ai, finance, web3, dev, health, food, fashion, space, travel, culture, education, impact
+- `staff_pick`: true for the hand-picked best-of
+
+## Style tags
+
+- Look: minimal, bold, brutalist, editorial, playful, retro, futuristic, luxury, corporate, organic, illustrated, immersive
+- Layout: grid, bento, asymmetric, centered, split, full-bleed, sidebar, horizontal
+- Colour: dark, light, monochrome, pastel, vibrant, neon, earthy, gradient, red, orange, green, blue, purple, pink
+
+Tags were assigned by looking at screenshots, so they are good for filtering but not perfect. A few dozen sites have no `styles` yet.
+
+## Notes
+
+- Free to read. Please keep requests modest; prefer the one-file dump over crawling pages.
+- Screenshots belong to the sites they show. Link back to `url` when you cite a reference.

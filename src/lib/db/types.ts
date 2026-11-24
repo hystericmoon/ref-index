@@ -290,6 +290,8 @@ export type Database = {
           status: string
           tags: string[]
           thumb_checked_at: string | null
+          styles: string[]
+          styles_checked_at: string | null
           thumb_is_share_image: boolean
           thumb_path: string | null
           url: string | null
@@ -312,6 +314,8 @@ export type Database = {
           status?: string
           tags?: string[]
           thumb_checked_at?: string | null
+          styles?: string[]
+          styles_checked_at?: string | null
           thumb_is_share_image?: boolean
           thumb_path?: string | null
           url?: string | null
@@ -334,6 +338,8 @@ export type Database = {
           status?: string
           tags?: string[]
           thumb_checked_at?: string | null
+          styles?: string[]
+          styles_checked_at?: string | null
           thumb_is_share_image?: boolean
           thumb_path?: string | null
           url?: string | null
