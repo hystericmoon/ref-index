@@ -910,3 +910,8 @@ _(ideas and out-of-scope items noted during sessions)_
 - Live on https://ref-index.vercel.app (deploy done): /references.json = 330 items, 326 with the new `pages` field, 974 pages in all. /pages.json = total 974 (returns 100 per call by default); ?type=pricing = 16; ?pattern=big-type = 203 (100 returned, capped). All match the local production build.
 - Open: llms.txt tagline still says "thousands of sites"; home pages have no pattern tags.
 - Next, owner to pick: (a) design.md per site + /site/[id].md + downloadable bundle (+ update /llms.txt and /references.json), or (b) retry inner-page capture for the 149 sites with fewer than 3 inner pages using looser link rules. Plan the pick and ask before building.
+
+### Resume here (2026-11-26, loose inner-page capture done; new pages not yet tagged)
+- Option (b) chosen. New scripts/capture-inner-loose.ts (tops up sites under 3 inner pages: 2 path segments per section, same-site subdomains, sitemap, clicks on non-link nav, contact only as last resort, 12 candidates, longer waits; skips /#section links and legal pages) and scripts/inner-loose-sql.ts (appends to details.pages and adds untagged showcase_pages rows).
+- Ran on 145 of the 149 (4 have no details). 139 OK, 63 sites gained pages, 96 new pages (prefix v5, Cloudflare Pages). Inner pages per site for the 330: 3+ = 237 (was 181), 0 = 65 (was 78), 1 = 15, 2 = 9, no details = 4. The rest are single-page or JS-only sites; accepted.
+- DB: showcase_pages 1,070 rows, 96 untagged (position > 0). Next: tag the 96 by eye (tmp/inner/mosaic.mjs builds sheets of untagged; apply like tmp/inner/apply.mjs), clear cache, check /pages.json live, then option (a): design.md per site + /site/[id].md + bundle.
