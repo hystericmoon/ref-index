@@ -872,3 +872,4 @@ _(ideas and out-of-scope items noted during sessions)_
 - (c) docs/sessions.md: every session is done; the only open items are the 4/5 checks (library grid with 200 screens, tagging UI in a signed-in browser). They need a signed-in browser, so not done here.
 - (d) Upgraded next and eslint-config-next 16.4.3 -> 16.4.6 (latest); typecheck and build pass.
 - Open: the 28 url sites with no dark/light, the 13 with both, and the sessions.md signed-in checks.
+- (2026-11-25) Fixed the last dark/light gaps: 13 sites that carried both now have one (judged by eye); 28 untagged url sites tagged by hand from mosaics (style, layout, colour, mode). DB: every listed site with a url has exactly one of dark/light (dark 4,427 + light 7,891 = 12,318); 274 url-less entries stay untagged. Cache cleared. Scripts in tmp/ai-categorize (gitignored): apply41.mjs, fix-dl.mjs.
