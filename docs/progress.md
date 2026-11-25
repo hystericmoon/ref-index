@@ -865,3 +865,10 @@ _(ideas and out-of-scope items noted during sessions)_
 - Next: push, deploy (Vercel), check https://ref-index.vercel.app/references.json and /llms.txt live. Optional later: MCP server wrapping the search API, per-item descriptions (token-heavy, skipped on purpose). Still open: (b) spot-check 79 defaulted items; (c) next item in docs/sessions.md. Note: `pnpm build` printed a Next.js security-upgrade nudge; owner has not been asked yet.
 
 - Live check (2026-11-25): https://ref-index.vercel.app/references.json = 200 application/json, 12,318 items (up from 12,307 locally: the refresh cron added sites since), 12,318 unique ids, 0 duplicates. /llms.txt = 200 text/plain, content as expected. The b79a397 deploy is live. Still open: (a) confirm ~235 "no dark/light" sites are url-less entries, (b) spot-check 79 defaulted items, (c) next item in docs/sessions.md, (d) Next.js security upgrade nudge from pnpm build.
+
+### Resume here (2026-11-25, a-d done)
+- (a) Confirmed by DB count: 274 listed url-less entries, all without dark/light (they are the gap in the 12,538 count); 28 sites with a url also lack dark/light (added by the refresh cron after the tagging, 302 with no styles in all).
+- (b) The 79 defaulted dark/light items: 24 had dark/light in the agent's answer but it was cut by the colour-group cap in manual-build2.mjs (mode shares the cap of 3); applied those. The other 55 were judged by eye from 4 mosaics (tmp/ai-categorize/mosaic-N.jpg). Result: 32 dark, 47 light, applied via tmp/ai-categorize/fix-dl.sql; cache cleared. Note: 13 sites carry both dark and light from the earlier passes (not touched). Bug to remember if re-running manual-build2.mjs: dark/light can be dropped by the cap.
+- (c) docs/sessions.md: every session is done; the only open items are the 4/5 checks (library grid with 200 screens, tagging UI in a signed-in browser). They need a signed-in browser, so not done here.
+- (d) Upgraded next and eslint-config-next 16.4.3 -> 16.4.6 (latest); typecheck and build pass.
+- Open: the 28 url sites with no dark/light, the 13 with both, and the sessions.md signed-in checks.
