@@ -4,6 +4,7 @@ import { cache } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { DETAILS, type ShowcaseItem } from "@/lib/db/showcase";
 import { cachedShowcaseItem } from "@/lib/db/showcase-cache";
+import { pageTypeLabel } from "@/lib/page-types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
@@ -76,6 +77,7 @@ export function SiteDetail({ item }: { item: ShowcaseItem }) {
                   </span>
                   <span className="truncate px-1 text-sm font-medium group-hover:underline">
                     {p.title || hostOf(p.url)}
+                    {p.type && <span className="font-normal text-muted-foreground"> · {pageTypeLabel(p.type)}</span>}
                     <span className="sr-only"> (opens in a new tab)</span>
                   </span>
                 </a>

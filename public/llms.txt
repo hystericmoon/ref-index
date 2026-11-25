@@ -8,6 +8,8 @@
   Download it once and filter locally. Shape: `{ generated, count, items: [...] }`.
 - Search API (paged, 120 per page): https://ref-index.vercel.app/showcase.json?q=dark+minimal&style=dark,minimal&category=portfolio&view=all&offset=0
   Parameters: `q` (free text), `style` (comma list of tags below), `category` (one topic id), `medium` (all, web, 3d, mobile), `view` (`top` = staff picks, `all` = every live site), `offset`.
+- Page screenshots by type (paged, 100 per page): https://ref-index.vercel.app/pages.json?type=pricing&pattern=big-type&offset=0
+  Parameters: `type` (page type below), `pattern` (one pattern below), `offset`. Returns `{ items, total }`; each item has `type`, `patterns`, `title`, `url` (the page on the live site), `imageUrl` and `site` ({ id, name, url }). Human version: https://ref-index.vercel.app/pages
 - One human page per site: https://ref-index.vercel.app/site/{id}
 
 ## Item fields (references.json)
@@ -17,6 +19,7 @@
 - `styles`: tags from the lists below (up to 2 look, 2 layout, 3 colour; every tagged site has `dark` or `light`)
 - `categories`: topic ids, e.g. portfolio, agency, product, shop, editorial, event, ui-kit, design-tools, ai, finance, web3, dev, health, food, fashion, space, travel, culture, education, impact
 - `staff_pick`: true for the hand-picked best-of
+- `pages`: tagged page screenshots, home page first: `{ type, patterns, title, url, image }` (images are WebP, 1280 wide; the home page is a full-page capture)
 
 ## Style tags
 
@@ -25,6 +28,13 @@
 - Colour: dark, light, monochrome, pastel, vibrant, neon, earthy, gradient, red, orange, green, blue, purple, pink
 
 Tags were assigned by looking at screenshots, so they are good for filtering but not perfect. A few dozen sites have no `styles` yet.
+
+## Page types and patterns
+
+- Page types: home, about, work-index, case-study, pricing, features, services, shop, product-detail, blog-index, article, team, careers, contact, menu, event, gallery, collection, other
+- Patterns (0-3 per inner page; home pages are not tagged with patterns yet): hero-video, big-type, grid, horizontal-scroll, sticky-nav, split-screen, marquee, full-bleed-image, carousel, editorial-layout, dark-mode, illustration, 3d-webgl, minimal
+
+Page types and patterns were assigned by looking at screenshots, so expect a few misfiles.
 
 ## Notes
 

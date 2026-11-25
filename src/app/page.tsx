@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { HeroDecor } from "@/components/hero-decor";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/brand";
 import { CATEGORY_IDS } from "@/lib/categories";
@@ -45,6 +46,11 @@ export default async function Home({
           you search all of them at once. No paywall, no sign-up to browse.
         </p>
       </header>
+      <p className="px-4 text-sm sm:px-6 lg:px-10">
+        <Link href="/pages" className="inline-flex min-h-11 items-center font-medium underline-offset-4 hover:underline">
+          Browse by page type: pricing, about, case studies and more →
+        </Link>
+      </p>
       <Directory
         showcase={showcase.items}
         viewCounts={viewCounts}

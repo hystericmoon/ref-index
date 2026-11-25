@@ -38,9 +38,27 @@ const loadAll = unstable_cache(
       }
       if (data.length < PAGE) break;
     }
+    // Tagged page screenshots (home page first), grouped by site.
+    const pages = new Map<string, unknown[]>();
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await db
+        .from("showcase_pages")
+        .select("item_id, position, page_type, patterns, title, url, path")
+        .order("item_id")
+        .order("position")
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      for (const p of data) {
+        const list = pages.get(p.item_id) ?? [];
+        list.push({ type: p.page_type, patterns: p.patterns, title: p.title, url: p.url, image: `${DETAILS}/${p.path}` });
+        pages.set(p.item_id, list);
+      }
+      if (data.length < PAGE) break;
+    }
+    for (const row of rows) row.pages = pages.get(row.id as string) ?? [];
     return rows;
   },
-  ["references-dump"],
+  ["references-dump-v2"],
   { revalidate: 86_400, tags: [SHOWCASE_TAG] },
 );
 

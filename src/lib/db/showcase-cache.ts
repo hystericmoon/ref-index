@@ -1,6 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
-import { getCategoryCounts, getShowcaseItem, getStyleCounts, getViewCounts, searchShowcase, type ShowcaseQuery } from "./showcase";
+import { getCategoryCounts, getPageTypeCounts, getShowcaseItem, getStyleCounts, getViewCounts, listShowcasePages, searchShowcase, type ShowcasePageQuery, type ShowcaseQuery } from "./showcase";
 
 /**
  * Public showcase reads, kept in Next's data cache for 10 minutes so most visits skip the
@@ -25,3 +25,9 @@ export const cachedDirectoryCounts = unstable_cache(
 
 /** One site for its detail page or panel. */
 export const cachedShowcaseItem = unstable_cache((id: string) => getShowcaseItem(createPublicClient(), id), ["showcase-item"], options);
+
+/** One page of tagged page screenshots (/pages and /pages.json). */
+export const cachedShowcasePages = unstable_cache((query: ShowcasePageQuery) => listShowcasePages(createPublicClient(), query), ["showcase-pages"], options);
+
+/** Counts per page type, for the /pages filter chips. */
+export const cachedPageTypeCounts = unstable_cache(() => getPageTypeCounts(createPublicClient()), ["page-type-counts"], options);

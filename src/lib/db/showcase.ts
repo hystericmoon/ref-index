@@ -168,20 +168,21 @@ export type ShowcaseDetails = {
   full: string;
   /** Height of the full-page capture in CSS pixels at 1280 wide. */
   fullHeight: number;
-  pages: { url: string; title: string; imageUrl: string }[];
+  pages: { url: string; title: string; imageUrl: string; type: string | null }[];
 };
 
 export type ShowcaseItem = ShowcaseEntry & { status: string; details: ShowcaseDetails | null };
 
 /** One showcase item for its detail page (/site/[id]), or null when it doesn't exist or is hidden. */
 export async function getShowcaseItem(db: DbClient, id: string): Promise<ShowcaseItem | null> {
-  const [{ data: row, error }, { data: features, error: featuresError }] = await Promise.all([
+  const [{ data: row, error }, { data: features, error: featuresError }, { data: tagged }] = await Promise.all([
     db
       .from("showcase_items")
       .select("id, name, url, platform, tags, thumb_path, thumb_is_share_image, staff_pick, gallery_count, categories, status, details")
       .eq("id", id)
       .maybeSingle(),
     db.from("showcase_features").select("source_url").eq("item_id", id).order("first_seen").limit(1),
+    db.from("showcase_pages").select("path, page_type").eq("item_id", id),
   ]);
   if (error) throw error;
   if (featuresError) throw featuresError;
@@ -202,7 +203,62 @@ export async function getShowcaseItem(db: DbClient, id: string): Promise<Showcas
     sourceUrl: row.url ? null : (features?.[0]?.source_url ?? null),
     status: row.status,
     details: d
-      ? { full: imageUrl(d.full), fullHeight: d.fullHeight, pages: d.pages.map((p) => ({ url: p.url, title: p.title, imageUrl: imageUrl(p.path) })) }
+      ? { full: imageUrl(d.full), fullHeight: d.fullHeight, pages: d.pages.map((p) => ({ url: p.url, title: p.title, imageUrl: imageUrl(p.path), type: tagged?.find((t) => t.path === p.path)?.page_type ?? null })) }
       : null,
   };
+}
+
+export type ShowcasePage = {
+  /** 0 is the home page. */
+  position: number;
+  type: string | null;
+  patterns: string[];
+  title: string | null;
+  /** The page's address on the live site. */
+  url: string | null;
+  imageUrl: string;
+  site: { id: string; name: string; url: string | null };
+};
+
+export type ShowcasePageQuery = { type?: string; pattern?: string; offset?: number; limit?: number };
+
+/** One page of tagged page screenshots from listed sites (/pages, /pages.json), filtered by page type and pattern. */
+export async function listShowcasePages(db: DbClient, query: ShowcasePageQuery = {}) {
+  const limit = query.limit ?? 60;
+  const offset = query.offset ?? 0;
+  let q = db
+    .from("showcase_pages")
+    .select("position, page_type, patterns, title, url, path, showcase_items!inner(id, name, url, status)", { count: "exact" })
+    .eq("showcase_items.status", "listed");
+  if (query.type) q = q.eq("page_type", query.type);
+  if (query.pattern) q = q.contains("patterns", [query.pattern]);
+  const { data, error, count } = await q.order("item_id").order("position").range(offset, offset + limit - 1);
+  if (error) throw error;
+  return {
+    items: data.map(
+      (r): ShowcasePage => ({
+        position: r.position,
+        type: r.page_type,
+        patterns: r.patterns,
+        title: r.title,
+        url: r.url,
+        imageUrl: imageUrl(r.path),
+        site: { id: r.showcase_items.id, name: r.showcase_items.name, url: r.showcase_items.url },
+      }),
+    ),
+    total: count ?? 0,
+  };
+}
+
+/** How many listed pages carry each page type. */
+export async function getPageTypeCounts(db: DbClient): Promise<Record<string, number>> {
+  const { data, error } = await db
+    .from("showcase_pages")
+    .select("page_type, showcase_items!inner(status)")
+    .eq("showcase_items.status", "listed")
+    .limit(5000);
+  if (error) throw error;
+  const counts: Record<string, number> = {};
+  for (const r of data) if (r.page_type) counts[r.page_type] = (counts[r.page_type] ?? 0) + 1;
+  return counts;
 }

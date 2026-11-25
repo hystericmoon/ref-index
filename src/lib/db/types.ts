@@ -271,6 +271,50 @@ export type Database = {
           },
         ]
       }
+      showcase_pages: {
+        Row: {
+          id: number
+          item_id: string
+          position: number
+          path: string
+          url: string | null
+          title: string | null
+          page_type: string | null
+          patterns: string[]
+          tagged_at: string | null
+        }
+        Insert: {
+          id?: number
+          item_id: string
+          position: number
+          path: string
+          url?: string | null
+          title?: string | null
+          page_type?: string | null
+          patterns?: string[]
+          tagged_at?: string | null
+        }
+        Update: {
+          id?: number
+          item_id?: string
+          position?: number
+          path?: string
+          url?: string | null
+          title?: string | null
+          page_type?: string | null
+          patterns?: string[]
+          tagged_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "showcase_pages_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "showcase_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       showcase_items: {
         Row: {
           ai_checked_at: string | null
