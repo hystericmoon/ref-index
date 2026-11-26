@@ -5,6 +5,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { DETAILS, type ShowcaseItem } from "@/lib/db/showcase";
 import { cachedShowcaseItem } from "@/lib/db/showcase-cache";
 import { pageTypeLabel } from "@/lib/page-types";
+import { DesignNote } from "./design-note";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PLATFORM_LABEL: Record<string, string> = { web: "Web", "3d": "3D", ios: "iOS", android: "Android", mobile: "App" };
@@ -86,6 +87,8 @@ export function SiteDetail({ item }: { item: ShowcaseItem }) {
           </ul>
         </section>
       )}
+
+      <DesignNote id={item.id} />
 
       <section aria-labelledby="home-page" className="flex flex-col gap-3">
         <h2 id="home-page" className="text-lg font-semibold tracking-tight">

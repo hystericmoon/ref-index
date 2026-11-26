@@ -1,3 +1,4 @@
+import { condenseFacts } from "@/lib/db/designs";
 import { THUMBS, DETAILS } from "@/lib/db/showcase";
 import { SHOWCASE_TAG } from "@/lib/db/showcase-cache";
 import { createPublicClient } from "@/lib/supabase/public";
@@ -56,9 +57,27 @@ const loadAll = unstable_cache(
       if (data.length < PAGE) break;
     }
     for (const row of rows) row.pages = pages.get(row.id as string) ?? [];
+    // Design notes: a link to each site's Markdown note plus the measured facts (fonts, palette, platform).
+    const designs = new Map<string, unknown>();
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await db
+        .from("showcase_designs")
+        .select("item_id, facts")
+        .not("design_md", "is", null)
+        .order("item_id")
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      for (const d of data) designs.set(d.item_id, condenseFacts(d.facts));
+      if (data.length < PAGE) break;
+    }
+    for (const row of rows) {
+      const facts = designs.get(row.id as string);
+      row.design = facts ? `${SITE}/site/${row.id}.md` : null;
+      row.facts = facts ?? null;
+    }
     return rows;
   },
-  ["references-dump-v2"],
+  ["references-dump-v3"],
   { revalidate: 86_400, tags: [SHOWCASE_TAG] },
 );
 

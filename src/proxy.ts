@@ -7,5 +7,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Everything except static assets, image files and the public showcase feed (no session needed).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|showcase\\.json|references\\.json|pages\\.json|llms\\.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|showcase\\.json|references\\.json|pages\\.json|llms\\.txt|designs\\.md|designs\\.zip|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|md)$).*)"],
 };

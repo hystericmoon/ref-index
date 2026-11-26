@@ -271,6 +271,38 @@ export type Database = {
           },
         ]
       }
+      showcase_designs: {
+        Row: {
+          item_id: string
+          design_md: string | null
+          facts: Json
+          facts_at: string | null
+          generated_at: string | null
+        }
+        Insert: {
+          item_id: string
+          design_md?: string | null
+          facts?: Json
+          facts_at?: string | null
+          generated_at?: string | null
+        }
+        Update: {
+          item_id?: string
+          design_md?: string | null
+          facts?: Json
+          facts_at?: string | null
+          generated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "showcase_designs_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: true
+            referencedRelation: "showcase_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       showcase_pages: {
         Row: {
           id: number
