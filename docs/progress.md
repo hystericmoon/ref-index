@@ -971,3 +971,8 @@ _(ideas and out-of-scope items noted during sessions)_
 ### Cleanup (2026-11-26)
 - Removed docs/oracle (Oracle VM setup, committed by mistake earlier). Hidden the 4 dead domains (Flashform, Flecto, Mirage Festival, Admir Hadzic; status 'hidden', reverse with an update). Kept listed the 3 bot-blocked sites (Iceberg 402, Collage 522, Amrit Palace 403). Curated set with notes: 326 (llms.txt updated). Cache cleared.
 - OPEN: the daily cron (03:00 UTC) listed 20 new sites today, none staff picks, none with notes, details or tags (showcase_items listed = 346, references.json = 337). Decide: hide them to keep the curated set, or curate/capture/write notes for them.
+
+### Screenshot quality scan (2026-11-26)
+- Scanned all 1,067 listed page images (tmp/review/scan.mjs, scan.json; mosaic.mjs makes eye-check sheets). Looked at the 6 worst homes by eye (This, Nine Sixty, Flying Papers, Andre Ribeiro, Canvas, Oryzo AI): real defect. The 10,240px "full page" shows only the first screen, then flat colour, because content reveals on scroll or is JS-driven (loader, Lenis, WebGL).
+- Counts (heuristic, noisy, solid-colour sections inflate it): 67 homes with a blank band of 900+ CSS px; 57 inner pages mostly blank; 39 near-flat images; 87 homes only 640px tall (single-screen sites, probably fine). "This" is a black screen with only a nav. Not fixed yet.
+- Proposed fix, in order: (1) trim the trailing blank from home captures (no recapture); (2) recapture the flagged homes and inner pages after scrolling through the page to trigger reveals, review by eye in mosaics; (3) drop pages that stay blank; rewrite notes that describe the empty parts. Notes mention layout from these captures, so notes for the changed sites need a re-check.
