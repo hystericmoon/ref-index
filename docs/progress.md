@@ -984,3 +984,9 @@ _(ideas and out-of-scope items noted during sessions)_
 - Still short notes (4): Admir Hadzic, Mirage Festival (dead, hidden), Grids (429), Union (screenshot timeout; retry with scripts/capture-details.ts --ids ... --prefix v7).
 - Lessons: the browser pane denies the Clipboard API; `git add -A <dir>` picks up unrelated untracked files, so add named files; cdn-sync order in scripts/capture-details.sh (cdn-sync --add, then showcase-details-sql, then db query); clear cache with node --env-file=.env.local scripts/clear-cache.ts https://ref-index.vercel.app.
 - Rules: Sonnet only, no Haiku, at most 3 subagents at once, don't poll, save progress and commit/push after each task.
+
+### New sites start hidden (2026-11-27)
+- Hid the 20 sites the daily cron listed on 2026-11-26 (none curated). Listed is back to 326. Migration 20261127000100 changes add_showcase_entries so new sites from the refresh are inserted with status 'hidden' (existing items keep their status). Applied with db push, cache cleared.
+- To curate a new site later: capture, tag, write the note, then set status 'listed' with the curation action.
+- Kept listed: Iceberg 402, Collage 522, Amrit Palace 403 (owner's call).
+- Next: screenshot-quality fix (1: trim blank tails; 2: recapture after scrolling, eye review; 3: drop blank pages, re-check notes).
