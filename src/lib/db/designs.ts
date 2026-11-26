@@ -67,8 +67,43 @@ export function renderSiteMarkdown(site: SiteRow, designMd: string, pages: PageR
   return lines.join("\n") + "\n";
 }
 
-/** The Markdown for one listed site, or null if it isn't listed or has no note yet. */
-export async function getSiteMarkdown(id: string): Promise<string | null> {
+/** One site's design note as a ready-to-paste prompt for a coding agent (the "Copy as prompt" text). */
+export function renderSitePrompt(site: SiteRow, designMd: string, pages: PageRow[]): string {
+  // Drop the "# Title" line (the prompt names the site itself); keep the description and every section.
+  const note = designMd
+    .split("\n")
+    .filter((l) => !l.startsWith("# "))
+    .map((l) => (l.startsWith("## ") ? `#${l}` : l))
+    .join("\n")
+    .trim();
+  const lines = [
+    `Use the design note below as a style brief for the interface you build. The reference is "${site.name}"${site.url ? ` (${site.url})` : ""}.`,
+    "",
+    "Take its palette, type, layout and motion ideas. Do not copy its text, logo, brand name, photos or illustrations. Keep my content and structure, and apply this look to them.",
+    "",
+    "## Design note",
+    "",
+    note,
+  ];
+  if (pages.length) {
+    lines.push("", "## Reference screenshots", "");
+    for (const p of pages) {
+      const kind = p.position === 0 ? "home (full page)" : (p.page_type ?? "page");
+      lines.push(`- ${kind}: ${DETAILS}/${p.path}`);
+    }
+  }
+  lines.push(
+    "",
+    "## Notes",
+    "",
+    "- The note is a first pass written from screenshots and measured facts. Colours marked approximate were read by eye, so check them against the screenshots.",
+    `- Full page and tagged inner pages: ${SITE_URL}/site/${site.id}`,
+  );
+  return lines.join("\n") + "\n";
+}
+
+/** The Markdown (or, with `prompt`, the ready-to-paste prompt) for one listed site, or null if it isn't listed or has no note yet. */
+export async function getSiteMarkdown(id: string, prompt = false): Promise<string | null> {
   if (!UUID.test(id)) return null;
   const db = createPublicClient();
   const [site, design, pages] = await Promise.all([
@@ -80,7 +115,8 @@ export async function getSiteMarkdown(id: string): Promise<string | null> {
   if (design.error) throw design.error;
   if (pages.error) throw pages.error;
   if (!site.data || !design.data?.design_md) return null;
-  return renderSiteMarkdown(site.data, design.data.design_md, pages.data ?? []);
+  const render = prompt ? renderSitePrompt : renderSiteMarkdown;
+  return render(site.data, design.data.design_md, pages.data ?? []);
 }
 
 export type DesignEntry = { id: string; name: string; url: string; design_md: string };

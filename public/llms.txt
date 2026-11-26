@@ -11,6 +11,7 @@
 - Page screenshots by type (paged, 100 per page): https://ref-index.vercel.app/pages.json?type=pricing&pattern=big-type&offset=0
   Parameters: `type` (page type below), `pattern` (one pattern below), `offset`. Returns `{ items, total }`; each item has `type`, `patterns`, `title`, `url` (the page on the live site), `imageUrl` and `site` ({ id, name, url }). Human version: https://ref-index.vercel.app/pages
 - Design note per site, as Markdown (palette, type, layout, motion, what makes it good, plus its tagged pages with image links): https://ref-index.vercel.app/site/{id}.md
+- The same note as a ready-to-paste style-brief prompt for a coding agent: https://ref-index.vercel.app/site/{id}.md?prompt
 - All design notes in one Markdown file: https://ref-index.vercel.app/designs.md
 - All design notes as a zip, one file per site: https://ref-index.vercel.app/designs.zip
 - One human page per site: https://ref-index.vercel.app/site/{id}

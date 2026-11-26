@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import type { ReactNode } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
 import { SHOWCASE_TAG } from "@/lib/db/showcase-cache";
+import { CopyPromptButton } from "./copy-prompt-button";
 
 const loadNote = unstable_cache(
   async (id: string) => {
@@ -47,9 +48,12 @@ export async function DesignNote({ id }: { id: string }) {
         <h2 id="design-note" className="text-lg font-semibold tracking-tight">
           Design notes
         </h2>
-        <a href={`/site/${id}.md`} className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
-          Markdown version
-        </a>
+        <div className="flex flex-wrap items-center gap-3">
+          <CopyPromptButton id={id} />
+          <a href={`/site/${id}.md`} className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+            Markdown version
+          </a>
+        </div>
       </div>
       <div className="flex flex-col gap-4 text-sm leading-6">
         {shown.map((s) => (

@@ -1,9 +1,11 @@
 import { getSiteMarkdown } from "@/lib/db/designs";
 
 // A site's design note as Markdown, served at /site/{id}.md (see the rewrite in next.config.ts).
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+// /site/{id}.md?prompt returns the same note wrapped as a ready-to-paste prompt for a coding agent.
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const md = await getSiteMarkdown(id);
+  const prompt = new URL(request.url).searchParams.has("prompt");
+  const md = await getSiteMarkdown(id, prompt);
   if (!md) return new Response("Not found\n", { status: 404, headers: { "content-type": "text/plain; charset=utf-8" } });
   return new Response(md, {
     headers: {

@@ -953,3 +953,8 @@ _(ideas and out-of-scope items noted during sessions)_
 ### Google Cloud billing (2026-11-26)
 - Google emailed that billing account "My Billing Account" (014F83-C64DFB-E17698) is past due (expired card). Spend was Rp0 over 30 days. Ref Index (ref-index) only uses Google Cloud for the Google OAuth sign-in client, which is free.
 - Disabled billing on the ref-index project only (done in the Cloud console). Three other projects still use that account. Not yet re-tested: Google sign-in on the live site. If it breaks, re-link billing to the project.
+
+### Copy as prompt (2026-11-26)
+- Shipped: `/site/{id}.md?prompt` returns the design note wrapped as a style-brief prompt for a coding agent (renderSitePrompt in src/lib/db/designs.ts: don't copy text/brand/images, note, screenshot links, first-pass caveat). "Copy as prompt" button next to "Markdown version" on the site page (copy-prompt-button.tsx; falls back to execCommand when the Clipboard API is refused). Mentioned in /llms.txt.
+- Checked locally: endpoint output, button copies and shows "Copied". The in-app browser pane denies the Clipboard API, so only the fallback path was exercised; the Clipboard API path is unverified. Live check after deploy still to do.
+- Next: second-pass review of the design notes.
