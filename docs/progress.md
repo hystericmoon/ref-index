@@ -990,3 +990,8 @@ _(ideas and out-of-scope items noted during sessions)_
 - To curate a new site later: capture, tag, write the note, then set status 'listed' with the curation action.
 - Kept listed: Iceberg 402, Collage 522, Amrit Palace 403 (owner's call).
 - Next: screenshot-quality fix (1: trim blank tails; 2: recapture after scrolling, eye review; 3: drop blank pages, re-check notes).
+
+### Screenshot fix, step 1: trimmed blank tails (2026-11-27)
+- Trimmed 45 of 324 home captures whose flat blank tail was 400+ CSS px (median 3,090 px cut; keeps 80 CSS px under the last content; min 1280 px tall). New files at img/details/t1/<id>/full.webp (new path because Pages caches files for a year); details.full, details.fullHeight and the position-0 showcase_pages row point at them. Originals untouched in the mirror. Sampled 8 by eye: content kept, only flat tail gone. Uploaded, recorded, cache cleared, /pages.json shows the t1 paths.
+- Script: tmp/trim.mjs (dry run, `--write` makes files and tmp/trim.sql). Stored fullHeight is in 1280-wide CSS px (image px / 1.6).
+- Not fixed: pages that show only their first screen then flat colour in the middle, and blank inner pages. That is step 2 (recapture after scrolling). Notes for the 45 trimmed sites are unchanged; they describe content that is still there.
