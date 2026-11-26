@@ -921,3 +921,9 @@ _(ideas and out-of-scope items noted during sessions)_
 - Lesson: scripts/cdn-sync.ts drops files the database does not reference yet. Record a batch in the DB (inner-loose-sql / showcase-details-sql) BEFORE the next cdn-sync, or re-run `cdn-sync --add <old batch>` afterwards. (The v5 trial batch was dropped by the second upload and re-added.) Also `tail` hides mosaic.mjs "fail" lines: grep -c fail.
 - Open: llms.txt tagline still says "thousands of sites"; home pages have no pattern tags.
 - Next: option (a): design.md per site + /site/[id].md + downloadable bundle; update /llms.txt and /references.json. Plan it and ask the owner before building.
+
+### Resume here (2026-11-26, design.md pilot passed; writing the rest)
+- Option (a) in progress. Migration 20261126000100 (showcase_designs: item_id, design_md, facts jsonb, facts_at, generated_at; public read) applied. scripts/extract-facts.ts + facts-sql.ts measured fonts, colours, dominant palette, meta, platform hints for 330 sites (322 ok; 8 failed: 4 dead domains, 4 HTTP errors); facts stored in showcase_designs.
+- Contact sheets (home + up to 4 inner pages) for 326 sites, batches of 10 (33 batches) in tmp/designs (gitignored: sheets.mjs, brief.md, check.mjs, batches/, out/). Pilot b01-b03 (30 sites): format checks pass, two notes checked against screenshots and facts (accurate; eye-read colours flagged as approx). Remaining b04-b33 are written by Sonnet agents, 3 at a time; outputs in tmp/designs/out/bNN.json, validated with node tmp/designs/check.mjs.
+- Next: apply design_md + home_patterns to the DB (design_md, generated_at; home pattern tags into showcase_pages position 0), endpoints (/site/[id].md via rewrite, /designs.md, /designs.zip, design link in /references.json), llms.txt, site page block, deploy.
+- Scrolltide (scrolltide.co): owner shared it; it is a paid prompt/template library, not a site for the directory. Asked what they want from it; no answer yet.
