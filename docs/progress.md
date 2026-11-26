@@ -949,3 +949,7 @@ _(ideas and out-of-scope items noted during sessions)_
 - Lessons: cdn-sync drops files the DB does not reference yet (record the batch first); `tail` hides mosaic.mjs "fail" lines (grep -c fail); Git Bash /tmp is not visible to node on Windows (use tmp/ in the repo).
 - Ideas, none started: "Copy as prompt" button/`?prompt` built from a design note; design-note search in /showcase.json; refresh facts and notes when the daily cron changes a site; hide or retry the dead domains; second-pass review of notes (colours read by eye).
 - Rules: Sonnet only, no Haiku, at most 3 subagents at once, don't poll, save progress and commit/push after each task. Scratch work in tmp/ (gitignored).
+
+### Google Cloud billing (2026-11-26)
+- Google emailed that billing account "My Billing Account" (014F83-C64DFB-E17698) is past due (expired card). Spend was Rp0 over 30 days. Ref Index (ref-index) only uses Google Cloud for the Google OAuth sign-in client, which is free.
+- Disabled billing on the ref-index project only (done in the Cloud console). Three other projects still use that account. Not yet re-tested: Google sign-in on the live site. If it breaks, re-link billing to the project.
