@@ -1,6 +1,6 @@
 # Openrefs
 
-> 330 hand-picked, well-designed websites, curated into one free collection of design references. Each site has a full home-page capture, up to three tagged inner pages, style tags, measured facts (fonts, colours, platform) and a plain-words design note in Markdown.
+> 326 hand-picked, well-designed websites, curated into one free collection of design references. Each site has a full home-page capture, up to three tagged inner pages, style tags, measured facts (fonts, colours, platform) and a plain-words design note in Markdown.
 
 ## Data for agents
 

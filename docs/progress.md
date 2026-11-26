@@ -967,3 +967,7 @@ _(ideas and out-of-scope items noted during sessions)_
 - Recaptured the 3 short-note sites that answer again (prefix v6, tmp/showcase-details-v6): Medusmo captured (home only; uploaded, recorded, home row tagged hero-video/big-type/full-bleed-image/grid/minimal, note rewritten from the screenshot); Grids still 429 for the browser; Union screenshot timed out. Cache cleared; live checked: /site/{id}.md?prompt 200, Copy as prompt button on the site page, no "approximate" or "No screenshots" left for Medusmo in /designs.md.
 - Still short notes (4): Admir Hadzic and Mirage Festival (dead domains), Grids (429), Union (timeout; retry later). Other dead or blocked sites unchanged: Flashform, Flecto (dead), Iceberg 402, Collage 522, Amrit Palace 403.
 - Open for the owner: hide the dead/blocked sites? Not done. Clipboard API path of the copy button unverified (only the fallback was tested).
+
+### Cleanup (2026-11-26)
+- Removed docs/oracle (Oracle VM setup, committed by mistake earlier). Hidden the 4 dead domains (Flashform, Flecto, Mirage Festival, Admir Hadzic; status 'hidden', reverse with an update). Kept listed the 3 bot-blocked sites (Iceberg 402, Collage 522, Amrit Palace 403). Curated set with notes: 326 (llms.txt updated). Cache cleared.
+- OPEN: the daily cron (03:00 UTC) listed 20 new sites today, none staff picks, none with notes, details or tags (showcase_items listed = 346, references.json = 337). Decide: hide them to keep the curated set, or curate/capture/write notes for them.
