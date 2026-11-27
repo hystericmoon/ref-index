@@ -1007,3 +1007,7 @@ _(ideas and out-of-scope items noted during sessions)_
 - Re-checked the notes of the 18 homes whose capture changed: 3 Sonnet subagents (6 sites each) compared each note with the new capture, rewrote layout/motion text and home patterns where the capture contradicted it (all 18 changed), checked sections and pattern tags, applied with scripts/designs-sql.ts (tmp/designs/recheck). Notes for the 25 sites with only inner-page retakes were not rewritten (notes cover the home capture).
 - Live: /designs.md and DB show the new notes; /site/{id}.md is edge-cached up to an hour (s-maxage=3600) that clear-cache.ts does not clear, so it updates by itself.
 - Still weak homes (retake did not fix, left as is, owner's call to hide or retry): 6 homes that are a loader or black screen (31e99ecc, 321b9c38, 60771439, 8b2b04f0, aff9a727, ce39c030), plus scroll-jacked/WebGL sites such as Noomo and Stone and Style. Production Portugal's home is really one screen tall.
+
+### Hid 6 blank homes (2026-11-28)
+- Owner chose to hide the 6 homes whose capture is still a loader or black screen: Pollen, This, Only, Martin Laxenaire - Portfolio, IAD Lab, Stripe Press (status 'hidden'; reverse with an update). Listed is now 320. Cache cleared. Notes stay in showcase_designs.
+- Next ideas, none started: retry these six with a longer wait or different capture; scroll-jacked sites (Noomo, Stone and Style) still flat after the hero.
