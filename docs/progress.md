@@ -1011,3 +1011,9 @@ _(ideas and out-of-scope items noted during sessions)_
 ### Hid 6 blank homes (2026-11-28)
 - Owner chose to hide the 6 homes whose capture is still a loader or black screen: Pollen, This, Only, Martin Laxenaire - Portfolio, IAD Lab, Stripe Press (status 'hidden'; reverse with an update). Listed is now 320. Cache cleared. Notes stay in showcase_designs.
 - Next ideas, none started: retry these six with a longer wait or different capture; scroll-jacked sites (Noomo, Stone and Style) still flat after the hero.
+
+### Resume here (2026-11-28, everything saved)
+- State: 320 listed curated sites with notes. The 20 uncurated cron sites are hidden and the daily refresh now adds new sites as hidden (migration 20261127000100). Screenshot fix done: 45 home tails trimmed (t1), 18 homes and 25 inner pages recaptured with wheel scroll (s1, scripts/recapture-scroll.ts), 8 blank inner pages dropped, notes rewritten for the 18 changed homes. 6 blank homes hidden (Pollen, This, Only, Martin Laxenaire, IAD Lab, Stripe Press). Iceberg, Collage, Amrit Palace stay listed (owner's call). All committed and pushed, nothing in flight.
+- Open: scroll-jacked/WebGL sites still flat after the hero (Noomo, Stone and Style); the 6 hidden homes could be retried with a longer wait; Grids (429) and Union (timeout) still have short notes; notes for the 25 inner-only-recaptured sites were not rewritten; Clipboard API path of Copy as prompt untested; /site/{id}.md is edge-cached up to an hour (clear-cache.ts does not clear it).
+- Lessons: node cannot spawn node_modules/.bin/supabase directly on Windows (run it from bash and read the output file); new image paths are needed for any changed capture (Pages caches a year); a command with several heredocs plus node -e quoting can fail to parse as a whole, so write scripts to files.
+- Rules: Sonnet only, no Haiku, at most 3 subagents at once, don't poll, save progress and commit/push after each task.
